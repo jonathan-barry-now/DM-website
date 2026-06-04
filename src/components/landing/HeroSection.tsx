@@ -65,7 +65,7 @@ export function HeroSection() {
 
                     <h1 className="text-4xl md:text-7xl font-extrabold tracking-tight leading-tight">
                         <span className="bg-clip-text text-transparent bg-gradient-to-r from-gold via-amber-200 to-gold drop-shadow-[0_0_25px_rgba(212,175,55,0.3)]">
-                            We Swim in <br className="hidden md:block" /> Liquid Capital
+                            The Fortune is in <br className="hidden md:block" /> the Follow Up
                         </span>
                     </h1>
 

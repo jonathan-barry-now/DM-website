@@ -94,7 +94,7 @@ export function TestimonialsSection() {
                             </div>
 
                             <p className="text-lg text-zinc-100 italic leading-relaxed mb-8 relative z-10 font-light">
-                                "{t.quote}"
+                                &quot;{t.quote}&quot;
                             </p>
 
                             <div className="flex items-center gap-4">
