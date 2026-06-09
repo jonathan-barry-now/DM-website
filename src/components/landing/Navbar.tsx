@@ -8,7 +8,7 @@ const navLinks = [
     { name: "Current", href: "#current" },
     { name: "Platform", href: "#platform" },
     { name: "Proof", href: "#proof" },
-    { name: "Apply", href: "#apply" }
+    { name: "Apply", href: "https://advisory.futurehouse.ai/jonathanbarry", external: true }
 ];
 
 interface NavbarProps {
@@ -60,16 +60,12 @@ export function Navbar({ onApplyClick }: NavbarProps) {
                     </a>
 
                     <nav className="hidden md:flex items-center gap-8">
-                        {navLinks.map((link) => (
+                        {navLinks.map((link: any) => (
                             <a
                                 key={link.name}
                                 href={link.href}
-                                onClick={(e) => {
-                                    if (link.name === "Apply" && onApplyClick) {
-                                        e.preventDefault();
-                                        onApplyClick();
-                                    }
-                                }}
+                                target={link.external ? "_blank" : undefined}
+                                rel={link.external ? "noopener noreferrer" : undefined}
                                 className="text-sm font-medium text-zinc-400 hover:text-white transition-colors relative group py-2"
                             >
                                 {link.name}
@@ -79,12 +75,14 @@ export function Navbar({ onApplyClick }: NavbarProps) {
                     </nav>
 
                     <div className="hidden md:block">
-                        <button
-                            onClick={onApplyClick}
+                        <a
+                            href="https://advisory.futurehouse.ai/jonathanbarry"
+                            target="_blank"
+                            rel="noopener noreferrer"
                             className="inline-flex h-10 items-center justify-center rounded-lg border border-[#f3d46b]/45 bg-black/25 px-5 text-xs font-bold uppercase tracking-[0.18em] text-white transition-all hover:border-[#f3d46b] hover:bg-[#f3d46b] hover:text-black cursor-pointer"
                         >
                             Apply Now
-                        </button>
+                        </a>
                     </div>
 
                     <button
@@ -107,32 +105,28 @@ export function Navbar({ onApplyClick }: NavbarProps) {
                         className="fixed top-[73px] left-0 right-0 z-40 bg-black/95 backdrop-blur-xl border-b border-white/10 md:hidden"
                     >
                         <nav className="flex flex-col p-6 gap-4">
-                            {navLinks.map((link) => (
+                            {navLinks.map((link: any) => (
                                 <a
                                     key={link.name}
                                     href={link.href}
-                                    onClick={(e) => {
-                                        setMobileOpen(false);
-                                        if (link.name === "Apply" && onApplyClick) {
-                                            e.preventDefault();
-                                            onApplyClick();
-                                        }
-                                    }}
+                                    target={link.external ? "_blank" : undefined}
+                                    rel={link.external ? "noopener noreferrer" : undefined}
+                                    onClick={() => setMobileOpen(false)}
                                     className="text-base font-semibold text-zinc-300 hover:text-white py-2 border-b border-white/5 transition-colors"
                                 >
                                     {link.name}
                                 </a>
                             ))}
 
-                            <button
-                                onClick={() => {
-                                    setMobileOpen(false);
-                                    if (onApplyClick) onApplyClick();
-                                }}
-                                className="mt-4 flex h-12 items-center justify-center rounded-lg bg-[#f3d46b] text-black font-bold uppercase tracking-wider transition-all hover:bg-[#fff1a6] cursor-pointer"
+                            <a
+                                href="https://advisory.futurehouse.ai/jonathanbarry"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                onClick={() => setMobileOpen(false)}
+                                className="mt-4 flex h-12 items-center justify-center rounded-lg bg-[#f3d46b] text-black font-bold uppercase tracking-wider transition-all hover:bg-[#fff1a6] cursor-pointer text-center"
                             >
                                 Apply Now
-                            </button>
+                            </a>
                         </nav>
                     </motion.div>
                 )}

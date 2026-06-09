@@ -13,8 +13,10 @@ const FIELD_KEYS = {
   // Step 1
   fullName: "full_name",
   linkedin: "LinkedIn",
+  email: "email",
   orgName: "Organization Name",
   industry: "Industry",
+  website: "Website URL",
   // Step 2
   orgType: "Organization Type",
   stage: "Stage",
@@ -33,8 +35,10 @@ export function LeadCaptureModal({ isOpen, onClose }: LeadCaptureModalProps) {
   const [formData, setFormData] = useState<Record<string, string>>({
     [FIELD_KEYS.fullName]: "",
     [FIELD_KEYS.linkedin]: "",
+    [FIELD_KEYS.email]: "",
     [FIELD_KEYS.orgName]: "",
     [FIELD_KEYS.industry]: "",
+    [FIELD_KEYS.website]: "",
     [FIELD_KEYS.orgType]: "",
     [FIELD_KEYS.stage]: "",
     [FIELD_KEYS.teamSize]: "",
@@ -70,8 +74,10 @@ export function LeadCaptureModal({ isOpen, onClose }: LeadCaptureModalProps) {
       setFormData({
         [FIELD_KEYS.fullName]: "",
         [FIELD_KEYS.linkedin]: "",
+        [FIELD_KEYS.email]: "",
         [FIELD_KEYS.orgName]: "",
         [FIELD_KEYS.industry]: "",
+        [FIELD_KEYS.website]: "",
         [FIELD_KEYS.orgType]: "",
         [FIELD_KEYS.stage]: "",
         [FIELD_KEYS.teamSize]: "",
@@ -109,8 +115,25 @@ export function LeadCaptureModal({ isOpen, onClose }: LeadCaptureModalProps) {
       } else if (!formData[FIELD_KEYS.linkedin].includes("linkedin.com")) {
         newErrors[FIELD_KEYS.linkedin] = "Please enter a valid LinkedIn URL";
       }
+      if (!formData[FIELD_KEYS.email].trim()) {
+        newErrors[FIELD_KEYS.email] = "Email is required";
+      } else {
+        const emailVal = formData[FIELD_KEYS.email].trim();
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(emailVal)) {
+          newErrors[FIELD_KEYS.email] = "Please enter a valid email address";
+        }
+      }
       if (!formData[FIELD_KEYS.orgName].trim()) newErrors[FIELD_KEYS.orgName] = "Organization name is required";
       if (!formData[FIELD_KEYS.industry].trim()) newErrors[FIELD_KEYS.industry] = "Industry field is required";
+      if (!formData[FIELD_KEYS.website].trim()) {
+        newErrors[FIELD_KEYS.website] = "Website URL is required";
+      } else {
+        const val = formData[FIELD_KEYS.website].trim();
+        if (!val.includes(".") || val.length < 4) {
+          newErrors[FIELD_KEYS.website] = "Please enter a valid website URL";
+        }
+      }
     } else if (step === 2) {
       if (!formData[FIELD_KEYS.orgType]) newErrors[FIELD_KEYS.orgType] = "Organization type is required";
       if (!formData[FIELD_KEYS.stage]) newErrors[FIELD_KEYS.stage] = "Stage is required";
@@ -138,6 +161,38 @@ export function LeadCaptureModal({ isOpen, onClose }: LeadCaptureModalProps) {
     setStep((prev) => prev - 1);
   };
 
+  const handleAutoPopulate = () => {
+    setFormData({
+      [FIELD_KEYS.fullName]: "Jonathan Berry",
+      [FIELD_KEYS.linkedin]: "www.linkedin.com/in/jonathanbarryfritzler",
+      [FIELD_KEYS.email]: "jonathan@futurehouse.ai",
+      [FIELD_KEYS.orgName]: "Future House",
+      [FIELD_KEYS.website]: "futurehouse.ai",
+      [FIELD_KEYS.industry]: "Artificial Intelligence & Agentic Coding",
+      [FIELD_KEYS.orgType]: "C-Corporation",
+      [FIELD_KEYS.stage]: "Series A",
+      [FIELD_KEYS.teamSize]: "11-50",
+      [FIELD_KEYS.funding]: "Currently in Series A; raising $10M targeting close by late Q3 2026.",
+      [FIELD_KEYS.traction]: "Raised $4M Seed. 25 enterprise pilots active, growing 20% MoM with $1.8M ARR.",
+      [FIELD_KEYS.problem]: "Standard software development is too slow; autonomous agentic coding unlocks 10x developer velocity.",
+      [FIELD_KEYS.story]: "Veteran tech operator and AI researcher who built and scaled two previous devtools platforms.",
+      [FIELD_KEYS.campaign]: "Agentic workflow systems, autonomous LLM code verification, future of software economics."
+    });
+    setErrors({});
+  };
+
+  const slugify = (text: string) => {
+    return text
+      .toString()
+      .toLowerCase()
+      .trim()
+      .replace(/\s+/g, "-")
+      .replace(/[^\w\-]+/g, "")
+      .replace(/\-\-+/g, "-")
+      .replace(/^-+/, "")
+      .replace(/-+$/, "");
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validateStep()) return;
@@ -157,6 +212,15 @@ export function LeadCaptureModal({ isOpen, onClose }: LeadCaptureModalProps) {
       if (!response.ok) {
         throw new Error(`Server responded with status ${response.status}`);
       }
+
+      // Generate slug and save form data in localStorage
+      const orgName = formData[FIELD_KEYS.orgName] || "company";
+      const slug = slugify(orgName) || "company";
+      localStorage.setItem(`proposal_form_${slug}`, JSON.stringify(formData));
+      localStorage.setItem("latest_proposal_slug", slug);
+
+      // Open new tab at proposal page
+      window.open(`/proposal/${slug}`, "_blank");
 
       setIsSuccess(true);
     } catch (error: any) {
@@ -224,6 +288,17 @@ export function LeadCaptureModal({ isOpen, onClose }: LeadCaptureModalProps) {
               </button>
             )}
 
+            {/* Auto Populate Button */}
+            {!isSubmitting && !isSuccess && (
+              <button
+                type="button"
+                onClick={handleAutoPopulate}
+                className="absolute top-4 right-14 text-zinc-500 hover:text-[#f3d46b] border border-zinc-800 hover:border-[#f3d46b]/35 bg-zinc-950/45 transition-all px-3 py-1 rounded-lg text-[10px] font-mono uppercase tracking-wider cursor-pointer"
+              >
+                Demo Fill
+              </button>
+            )}
+
             {/* Success Layout */}
             {isSuccess ? (
               <div className="flex flex-col items-center justify-center text-center py-10">
@@ -261,10 +336,10 @@ export function LeadCaptureModal({ isOpen, onClose }: LeadCaptureModalProps) {
                 {/* Form Header */}
                 <div>
                   <span className="text-[10px] uppercase font-mono tracking-[0.25em] text-[#f3d46b] font-bold">
-                    Partner Application
+                    12 Month IR Strategy
                   </span>
                   <h3 className="text-xl sm:text-2xl font-bold text-white tracking-tight mt-1 font-sans">
-                    Cultivate Your Expertise
+                    Get Your Free Strategy
                   </h3>
                   
                   {/* Progress Indicator */}
@@ -326,6 +401,20 @@ export function LeadCaptureModal({ isOpen, onClose }: LeadCaptureModalProps) {
 
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                           <div className="space-y-1">
+                            <label className="text-xs font-mono text-zinc-400 uppercase tracking-wider block">Email</label>
+                            <input
+                              type="email"
+                              value={formData[FIELD_KEYS.email]}
+                              onChange={(e) => handleInputChange(FIELD_KEYS.email, e.target.value)}
+                              placeholder="your@email.com"
+                              className={`w-full h-11 px-4 rounded-xl bg-zinc-950/70 border ${errors[FIELD_KEYS.email] ? "border-red-500/50 focus:border-red-500 focus:ring-1 focus:ring-red-500" : "border-zinc-800 focus:border-[#f3d46b]/60 focus:ring-1 focus:ring-[#f3d46b]/30"} text-white text-sm focus:outline-none transition-all`}
+                            />
+                            {errors[FIELD_KEYS.email] && (
+                              <span className="text-[10px] text-red-400 font-mono block">{errors[FIELD_KEYS.email]}</span>
+                            )}
+                          </div>
+
+                          <div className="space-y-1">
                             <label className="text-xs font-mono text-zinc-400 uppercase tracking-wider block">Organization Name</label>
                             <input
                               type="text"
@@ -338,23 +427,39 @@ export function LeadCaptureModal({ isOpen, onClose }: LeadCaptureModalProps) {
                               <span className="text-[10px] text-red-400 font-mono block">{errors[FIELD_KEYS.orgName]}</span>
                             )}
                           </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          <div className="space-y-1">
+                            <label className="text-xs font-mono text-zinc-400 uppercase tracking-wider block">Website URL</label>
+                            <input
+                              type="text"
+                              value={formData[FIELD_KEYS.website]}
+                              onChange={(e) => handleInputChange(FIELD_KEYS.website, e.target.value)}
+                              placeholder="https://example.com"
+                              className={`w-full h-11 px-4 rounded-xl bg-zinc-950/70 border ${errors[FIELD_KEYS.website] ? "border-red-500/50 focus:border-red-500 focus:ring-1 focus:ring-red-500" : "border-zinc-800 focus:border-[#f3d46b]/60 focus:ring-1 focus:ring-[#f3d46b]/30"} text-white text-sm focus:outline-none transition-all`}
+                            />
+                            {errors[FIELD_KEYS.website] && (
+                              <span className="text-[10px] text-red-400 font-mono block">{errors[FIELD_KEYS.website]}</span>
+                            )}
+                          </div>
 
                           <div className="space-y-1">
                             <label className="text-xs font-mono text-zinc-400 uppercase tracking-wider block">Industry</label>
-                            <input
-                              type="text"
-                              value={formData[FIELD_KEYS.industry]}
-                              onChange={(e) => handleInputChange(FIELD_KEYS.industry, e.target.value)}
-                              placeholder="AI / Fintech / Biotech"
-                              className={`w-full h-11 px-4 rounded-xl bg-zinc-950/70 border ${errors[FIELD_KEYS.industry] ? "border-red-500/50 focus:border-red-500 focus:ring-1 focus:ring-red-500" : "border-zinc-800 focus:border-[#f3d46b]/60 focus:ring-1 focus:ring-[#f3d46b]/30"} text-white text-sm focus:outline-none transition-all`}
-                            />
-                            {errors[FIELD_KEYS.industry] && (
-                              <span className="text-[10px] text-red-400 font-mono block">{errors[FIELD_KEYS.industry]}</span>
-                            )}
-                          </div>
+                          <input
+                            type="text"
+                            value={formData[FIELD_KEYS.industry]}
+                            onChange={(e) => handleInputChange(FIELD_KEYS.industry, e.target.value)}
+                            placeholder="AI / Fintech / Biotech"
+                            className={`w-full h-11 px-4 rounded-xl bg-zinc-950/70 border ${errors[FIELD_KEYS.industry] ? "border-red-500/50 focus:border-red-500 focus:ring-1 focus:ring-red-500" : "border-zinc-800 focus:border-[#f3d46b]/60 focus:ring-1 focus:ring-[#f3d46b]/30"} text-white text-sm focus:outline-none transition-all`}
+                          />
+                          {errors[FIELD_KEYS.industry] && (
+                            <span className="text-[10px] text-red-400 font-mono block">{errors[FIELD_KEYS.industry]}</span>
+                          )}
                         </div>
-                      </motion.div>
-                    )}
+                      </div>
+                    </motion.div>
+                  )}
 
                     {step === 2 && (
                       <motion.div

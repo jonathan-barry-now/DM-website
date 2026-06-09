@@ -20,10 +20,39 @@ export default function Home() {
       <div className="bg-noise pointer-events-none fixed inset-0 z-30 opacity-[0.04] mix-blend-soft-light" />
       
       {/* Navigation Bar */}
-      <Navbar onApplyClick={() => setIsApplyModalOpen(true)} />
+      <Navbar />
 
       {/* Main interactive scroll-driven container */}
       <WatchToComputer onApplyClick={() => setIsApplyModalOpen(true)} />
+
+      {/* Strategy CTA Section */}
+      <section className="relative z-30 py-24 bg-[#050505] border-t border-zinc-900 overflow-hidden flex items-center justify-center">
+        {/* Glow effects */}
+        <div 
+          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 pointer-events-none -z-10" 
+          style={{ background: "radial-gradient(circle, rgba(243,212,107,0.06) 0%, transparent 70%)" }}
+        />
+        
+        <div className="container mx-auto px-6 max-w-4xl text-center space-y-6">
+          <span className="text-[10px] uppercase font-mono tracking-[0.25em] text-[#f3d46b] font-bold">
+            Interactive IR Roadmap
+          </span>
+          <h2 className="text-3xl sm:text-5xl font-extrabold text-white tracking-tight leading-tight font-sans">
+            Ready to scale your capital pipeline?
+          </h2>
+          <p className="max-w-xl mx-auto text-zinc-400 text-sm font-light leading-relaxed font-sans">
+            Generate an interactive, high-density 12-month Investor Relations and narrative campaign strategy calibrated specifically for your organization's traction, stage, and goals.
+          </p>
+          <div className="pt-4">
+            <button
+              onClick={() => setIsApplyModalOpen(true)}
+              className="inline-flex h-12 items-center justify-center rounded-xl border border-[#f3d46b] bg-black/40 px-8 text-xs font-bold uppercase tracking-[0.18em] text-[#f3d46b] transition-all hover:bg-[#f3d46b] hover:text-black hover:shadow-[0_0_25px_rgba(243,212,107,0.25)] cursor-pointer font-sans"
+            >
+              Get Your Free 12 Month Strategy
+            </button>
+          </div>
+        </div>
+      </section>
 
       {/* Lead Capture Modal Form */}
       <LeadCaptureModal 
