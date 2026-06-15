@@ -87,28 +87,9 @@ function generateLocalFallbackStrategy(formData: Record<string, string>): Propos
   const problem = formData["What problem do you solve, and why is right now the critical moment to solve it?"] || "inefficiencies in the industry";
   const story = formData["What's your origin story in this industry, and what have you built or done before? Highlight key credentials."] || "years of technical experience";
 
-  let primary = "#f3d46b"; // gold
-  let secondary = "#00f0ff"; // cyan
-  let accent = "#fff1a6";
-
-  const lowerName = orgName.toLowerCase();
-  if (lowerName.includes("acme") || lowerName.includes("robo")) {
-    primary = "#ef4444"; // red
-    secondary = "#3b82f6"; // blue
-    accent = "#f87171";
-  } else if (lowerName.includes("future") || lowerName.includes("house") || lowerName.includes("agent")) {
-    primary = "#10b981"; // emerald green
-    secondary = "#6366f1"; // indigo
-    accent = "#34d399";
-  } else if (lowerName.includes("quantum") || lowerName.includes("cyber")) {
-    primary = "#8b5cf6"; // purple
-    secondary = "#ec4899"; // pink
-    accent = "#a78bfa";
-  } else if (lowerName.includes("deal") || lowerName.includes("machine")) {
-    primary = "#f3d46b"; // DealMachine gold
-    secondary = "#00f0ff"; // cyan
-    accent = "#fff1a6";
-  }
+  const primary = "#f3d46b"; // gold
+  const secondary = "#f3d46b"; // default to gold
+  const accent = "#fff1a6";
 
   return {
     title: `12-Month IR Strategy for ${orgName}`,
@@ -410,9 +391,13 @@ Ensure that the JSON is fully valid and strictly conformant to this schema. Do n
         if (!parsedStrategy.brand_colors) {
           parsedStrategy.brand_colors = {
             primary: "#f3d46b",
-            secondary: "#00f0ff",
+            secondary: "#f3d46b",
             accent: "#fff1a6"
           };
+        } else {
+          parsedStrategy.brand_colors.primary = parsedStrategy.brand_colors.primary || "#f3d46b";
+          parsedStrategy.brand_colors.secondary = parsedStrategy.brand_colors.secondary || "#f3d46b";
+          parsedStrategy.brand_colors.accent = parsedStrategy.brand_colors.accent || "#fff1a6";
         }
 
         setStrategy(parsedStrategy);
@@ -472,7 +457,7 @@ Ensure that the JSON is fully valid and strictly conformant to this schema. Do n
   }
 
   const primaryColor = strategy.brand_colors?.primary || "#f3d46b";
-  const secondaryColor = strategy.brand_colors?.secondary || "#00f0ff";
+  const secondaryColor = strategy.brand_colors?.secondary || "#f3d46b";
   const accentColor = strategy.brand_colors?.accent || "#fff1a6";
 
   const primaryRgb = hexToRgb(primaryColor);
@@ -695,24 +680,30 @@ Ensure that the JSON is fully valid and strictly conformant to this schema. Do n
                   {strategy.rows.map((row, idx) => {
                     // Determine phase names and styling
                     let phaseTag = "";
-                    let phaseColor = "border-l-2 border-[var(--primary-brand)]";
-                    let phaseBg = "bg-zinc-950/10";
+                    let isPrimary = true;
                     if (row.month <= 3) {
                       phaseTag = "Phase I: Problem + Category";
-                      phaseColor = "border-l-2 border-[var(--primary-brand)]";
+                      isPrimary = true;
                     } else if (row.month <= 6) {
                       phaseTag = "Phase II: Product + Proof";
-                      phaseColor = "border-l-2 border-purple-500";
-                      phaseBg = "bg-purple-950/5";
+                      isPrimary = true;
                     } else if (row.month <= 9) {
                       phaseTag = "Phase III: Scale + Market";
-                      phaseColor = "border-l-2 border-[var(--secondary-brand)]";
-                      phaseBg = "bg-cyan-950/5";
+                      isPrimary = false;
                     } else {
                       phaseTag = "Phase IV: Moat + Investment";
-                      phaseColor = "border-l-2 border-emerald-500";
-                      phaseBg = "bg-emerald-950/5";
+                      isPrimary = false;
                     }
+
+                    const phaseColorClass = isPrimary
+                      ? "border-l-2 border-[var(--primary-brand)]"
+                      : "border-l-2 border-[var(--secondary-brand)]";
+                    
+                    const rowStyle = {
+                      backgroundColor: isPrimary
+                        ? "rgba(var(--primary-rgb), 0.05)"
+                        : "rgba(var(--secondary-rgb), 0.05)"
+                    };
 
                     const showPhaseHeader = row.month === 1 || row.month === 4 || row.month === 7 || row.month === 10;
 
@@ -725,11 +716,11 @@ Ensure that the JSON is fully valid and strictly conformant to this schema. Do n
                             </td>
                           </tr>
                         )}
-                        <tr className={`${phaseBg} transition-colors hover:bg-zinc-900/40 align-top`}>
+                        <tr style={rowStyle} className="transition-colors hover:bg-zinc-900/40 align-top">
                           <td className="py-4 px-4 font-mono text-center font-bold text-zinc-300">
                             {row.month}
                           </td>
-                          <td className={`py-4 px-4 font-bold text-white leading-tight ${phaseColor}`}>
+                          <td className={`py-4 px-4 font-bold text-white leading-tight ${phaseColorClass}`}>
                             {row.title}
                           </td>
                           <td className="py-4 px-4 text-zinc-300 leading-snug">
