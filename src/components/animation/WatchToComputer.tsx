@@ -27,28 +27,6 @@ export function WatchToComputer({ onApplyClick }: WatchToComputerProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [currentActIndex, setCurrentActIndex] = useState(0);
 
-  // Helper to render headlines split word-by-word for scroll slide-up reveals
-  const renderSplitHeadline = (words: string[], highlightIndexes: number[], actNum: number) => {
-    return (
-      <span className="inline-flex flex-wrap gap-x-2 sm:gap-x-3 gap-y-1 sm:gap-y-2 leading-tight uppercase font-black text-white font-sans">
-        {words.map((word, index) => {
-          const isHighlighted = highlightIndexes.includes(index);
-          return (
-            <span key={index} className="inline-block overflow-hidden py-1">
-              <span 
-                className={`inline-block translate-y-full word-act-${actNum} ${
-                  isHighlighted ? "text-[#f3d46b]" : "text-white"
-                }`}
-              >
-                {word}
-              </span>
-            </span>
-          );
-        })}
-      </span>
-    );
-  };
-
   // Loading Screen simulation
   useEffect(() => {
     let progress = 0;
@@ -116,25 +94,25 @@ export function WatchToComputer({ onApplyClick }: WatchToComputerProps) {
       },
     });
 
-    // --- Background Image Controls ---
-    // Act I background scale and parallax
+    // --- Background Image Controls (Parallax translateY + Ken Burns scale) ---
+    // Act I: yPercent -10 to 10 (0.5x scroll movement) & scale 1.0 to 1.08
     tl.fromTo(img1Ref.current, 
-      { scale: 1.0, backgroundPositionY: "35%" }, 
-      { scale: 1.12, backgroundPositionY: "65%", ease: "none", duration: 1.5 }, 
+      { scale: 1.0, yPercent: -10 }, 
+      { scale: 1.08, yPercent: 10, ease: "none", duration: 1.5 }, 
       0
     );
     
-    // Act II background scale and parallax
+    // Act II: yPercent -10 to 10 & scale 1.0 to 1.08
     tl.fromTo(img2Ref.current, 
-      { scale: 1.0, backgroundPositionY: "35%" }, 
-      { scale: 1.12, backgroundPositionY: "65%", ease: "none", duration: 1.5 }, 
+      { scale: 1.0, yPercent: -10 }, 
+      { scale: 1.08, yPercent: 10, ease: "none", duration: 1.5 }, 
       1.5
     );
     
-    // Act III background scale and parallax
+    // Act III: yPercent -10 to 10 & scale 1.0 to 1.08
     tl.fromTo(img3Ref.current, 
-      { scale: 1.0, backgroundPositionY: "35%" }, 
-      { scale: 1.12, backgroundPositionY: "65%", ease: "none", duration: 1.5 }, 
+      { scale: 1.0, yPercent: -10 }, 
+      { scale: 1.08, yPercent: 10, ease: "none", duration: 1.5 }, 
       3.0
     );
 
@@ -150,39 +128,45 @@ export function WatchToComputer({ onApplyClick }: WatchToComputerProps) {
     // Act III to CTA background fade out
     tl.to(img3Ref.current, { opacity: 0, duration: 0.8, ease: "power1.inOut" }, 3.4);
 
-    // --- Text Reveals ---
+    // --- Text Reveals & Fades ---
     // Act I Text Out
     tl.to(".text-act-1", { opacity: 0, y: -40, duration: 0.6, ease: "power1.inOut" }, 0.4);
 
     // Act II Text In
-    tl.to(".label-act-2", { opacity: 1, duration: 0.4 }, 0.9)
-      .to(".word-act-2", { y: 0, duration: 0.6, stagger: 0.05, ease: "power2.out" }, 0.9)
-      .to(".sub-act-2", { opacity: 1, duration: 0.4 }, 1.2)
+    tl.fromTo(".label-act-2", { opacity: 0 }, { opacity: 1, duration: 0.4 }, 0.9)
+      .fromTo(".headline-act-2", { opacity: 0, y: 40 }, { opacity: 1, y: 0, duration: 0.6, ease: "power2.out" }, 0.9)
+      .fromTo(".sub-act-2", { opacity: 0 }, { opacity: 1, duration: 0.4 }, 1.2)
       // Act II Text Out
       .to(".text-act-2", { opacity: 0, y: -40, duration: 0.6, ease: "power1.inOut" }, 1.9);
 
     // Act III Text In
-    tl.to(".label-act-3", { opacity: 1, duration: 0.4 }, 2.4)
-      .to(".word-act-3", { y: 0, duration: 0.6, stagger: 0.05, ease: "power2.out" }, 2.4)
-      .to(".sub-act-3", { opacity: 1, duration: 0.4 }, 2.7)
+    tl.fromTo(".label-act-3", { opacity: 0 }, { opacity: 1, duration: 0.4 }, 2.4)
+      .fromTo(".headline-act-3", { opacity: 0, y: 40 }, { opacity: 1, y: 0, duration: 0.6, ease: "power2.out" }, 2.4)
+      .fromTo(".sub-act-3", { opacity: 0 }, { opacity: 1, duration: 0.4 }, 2.7)
       // Act III Text Out
       .to(".text-act-3", { opacity: 0, y: -40, duration: 0.6, ease: "power1.inOut" }, 3.4);
 
     // Act IV Text In
-    tl.to(".label-act-4", { opacity: 1, duration: 0.4 }, 3.9)
-      .to(".word-act-4", { y: 0, duration: 0.6, stagger: 0.05, ease: "power2.out" }, 3.9)
-      .to(".sub-act-4", { opacity: 1, duration: 0.4 }, 4.2);
+    tl.fromTo(".label-act-4", { opacity: 0 }, { opacity: 1, duration: 0.4 }, 3.9)
+      .fromTo(".headline-act-4", { opacity: 0, y: 40 }, { opacity: 1, y: 0, duration: 0.6, ease: "power2.out" }, 3.9)
+      .fromTo(".sub-act-4", { opacity: 0 }, { opacity: 1, duration: 0.4 }, 4.2);
 
     // 3. Intro animation for Act I text when page first loads
     const introTl = gsap.timeline();
-    introTl.to(".label-act-1", { opacity: 1, duration: 0.6, delay: 0.2 })
-           .to(".word-act-1", { y: 0, duration: 0.8, stagger: 0.05, ease: "power3.out" }, "-=0.4")
-           .to(".sub-act-1", { opacity: 1, duration: 0.6 }, "-=0.4");
+    introTl.fromTo(".label-act-1", { opacity: 0 }, { opacity: 1, duration: 0.4, delay: 0.2 })
+           .fromTo(".headline-act-1", { opacity: 0, y: 40 }, { opacity: 1, y: 0, duration: 0.6, ease: "power2.out" }, 0.2)
+           .fromTo(".sub-act-1", { opacity: 0 }, { opacity: 1, duration: 0.4 }, 0.5);
+
+    // 4. Force a ScrollTrigger calculation refresh to ensure coordinates align
+    const refreshTimeout = setTimeout(() => {
+      ScrollTrigger.refresh();
+    }, 100);
 
     return () => {
       gsap.ticker.remove(updateLenis);
       lenis.destroy();
       ScrollTrigger.getAll().forEach((trigger) => trigger.kill());
+      clearTimeout(refreshTimeout);
     };
   }, [isLoading]);
 
@@ -202,7 +186,7 @@ export function WatchToComputer({ onApplyClick }: WatchToComputerProps) {
 
     lenisRef.current.scrollTo(containerTop + offset, { 
       duration: 1.2, 
-      ease: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)) 
+      easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)) 
     });
   };
 
@@ -270,18 +254,15 @@ export function WatchToComputer({ onApplyClick }: WatchToComputerProps) {
       {!isLoading && (
         <div 
           ref={bgContainerRef}
-          className="fixed inset-x-0 -top-[10vh] h-[120vh] z-0 overflow-hidden pointer-events-none bg-black"
+          className="fixed inset-0 w-full h-screen z-0 overflow-hidden pointer-events-none bg-black"
         >
           {/* Act 1 Image */}
           <div 
             ref={img1Ref}
-            className="absolute inset-0 w-full h-full"
+            className="absolute w-full h-[130%] -top-[15%] bg-cover bg-center"
             style={{ 
-              backgroundImage: "url('/Image/act1-watch.png.png')",
+              backgroundImage: "url('/Image/act1-watch.png')",
               opacity: 1,
-              backgroundPositionY: "35%",
-              backgroundSize: "cover",
-              backgroundPositionX: "center",
               backgroundRepeat: "no-repeat"
             }}
           />
@@ -289,13 +270,10 @@ export function WatchToComputer({ onApplyClick }: WatchToComputerProps) {
           {/* Act 2 Image */}
           <div 
             ref={img2Ref}
-            className="absolute inset-0 w-full h-full"
+            className="absolute w-full h-[130%] -top-[15%] bg-cover bg-center"
             style={{ 
-              backgroundImage: "url('/Image/act2-explode.jpg.jpg')",
+              backgroundImage: "url('/Image/act3-goldwatch.jpg')",
               opacity: 0,
-              backgroundPositionY: "35%",
-              backgroundSize: "cover",
-              backgroundPositionX: "center",
               backgroundRepeat: "no-repeat"
             }}
           />
@@ -303,13 +281,10 @@ export function WatchToComputer({ onApplyClick }: WatchToComputerProps) {
           {/* Act 3 Image */}
           <div 
             ref={img3Ref}
-            className="absolute inset-0 w-full h-full"
+            className="absolute w-full h-[130%] -top-[15%] bg-cover bg-center"
             style={{ 
-              backgroundImage: "url('/Image/act3-quantum.png.png')",
+              backgroundImage: "url('/Image/act2-chip3d.jpg')",
               opacity: 0,
-              backgroundPositionY: "35%",
-              backgroundSize: "cover",
-              backgroundPositionX: "center",
               backgroundRepeat: "no-repeat"
             }}
           />
@@ -345,13 +320,15 @@ export function WatchToComputer({ onApplyClick }: WatchToComputerProps) {
               
               {/* Left Column: text details */}
               <div className="col-span-1 lg:col-span-6 flex flex-col justify-center text-left space-y-6 relative h-[400px]">
-                                {/* Act I Text Panel */}
+                
+                {/* Act I Text Panel */}
                 <div className="absolute text-act-1 opacity-100 max-w-md pointer-events-auto space-y-4">
                   <span className="label-act-1 opacity-0 text-[10px] uppercase font-mono tracking-[0.25em] text-[#f3d46b] font-bold block">
                     Act I — The Heritage
                   </span>
-                  <h1 className="text-4xl sm:text-5xl font-black text-white tracking-tight leading-tight uppercase font-sans">
-                    {renderSplitHeadline(["NOW", "IS", "THE", "TIME", "TO", "HARNESS", "AI", "FOR", "YOUR", "RAISE"], [5, 6], 1)}
+                  <h1 className="headline-act-1 opacity-0 text-4xl sm:text-5xl font-black text-white tracking-tight leading-tight uppercase font-sans">
+                    Now is the time to <br />
+                    <span className="text-[#f3d46b]">harness AI</span> for your raise
                   </h1>
                   <p className="sub-act-1 opacity-0 text-zinc-400 text-sm font-light leading-relaxed">
                     Old-world discipline meets next-generation execution. The gold antique watch movement represents the classic relational mechanics of capital raising, fully assembled and ticking.
@@ -363,8 +340,9 @@ export function WatchToComputer({ onApplyClick }: WatchToComputerProps) {
                   <span className="label-act-2 opacity-0 text-[10px] uppercase font-mono tracking-[0.25em] text-[#f3d46b] font-bold block">
                     Act II — The Disassembly
                   </span>
-                  <h2 className="text-4xl sm:text-5xl font-black text-white tracking-tight leading-tight uppercase font-sans">
-                    {renderSplitHeadline(["DECONSTRUCTING", "THE", "CAPITAL", "STACK"], [2, 3], 2)}
+                  <h2 className="headline-act-2 opacity-0 text-4xl sm:text-5xl font-black text-white tracking-tight leading-tight uppercase font-sans">
+                    Deconstruct the <br />
+                    <span className="text-[#f3d46b]">Capital Stack</span>
                   </h2>
                   <p className="sub-act-2 opacity-0 text-zinc-400 text-sm font-light leading-relaxed">
                     Timeless structures shatter into functional components. Manual workflows explode to isolate raw relationship signals, secure access nodes, and authority builders.
@@ -376,8 +354,9 @@ export function WatchToComputer({ onApplyClick }: WatchToComputerProps) {
                   <span className="label-act-3 opacity-0 text-[10px] uppercase font-mono tracking-[0.25em] text-[#f3d46b] font-bold block">
                     Act III — The Synthesis
                   </span>
-                  <h2 className="text-4xl sm:text-5xl font-black text-white tracking-tight leading-tight uppercase font-sans">
-                    {renderSplitHeadline(["THE", "QUANTUM", "ENGINE", "ASSEMBLES"], [2, 3], 3)}
+                  <h2 className="headline-act-3 opacity-0 text-4xl sm:text-5xl font-black text-white tracking-tight leading-tight uppercase font-sans">
+                    The Quantum <br />
+                    <span className="text-[#f3d46b]">Engine Assembles</span>
                   </h2>
                   <p className="sub-act-3 opacity-0 text-zinc-400 text-sm font-light leading-relaxed">
                     Those same components reassemble into a high-density, cryogenic quantum computer stack. Your raise is now powered by automated, interconnected momentum.
@@ -389,8 +368,9 @@ export function WatchToComputer({ onApplyClick }: WatchToComputerProps) {
                   <span className="label-act-4 opacity-0 text-[10px] uppercase font-mono tracking-[0.25em] text-[#f3d46b] font-bold block">
                     Act IV — Infinite Scaling
                   </span>
-                  <h2 className="text-4xl sm:text-6xl font-black text-white tracking-tight leading-tight uppercase font-sans">
-                    {renderSplitHeadline(["CALIBRATE", "YOUR", "CAPITAL", "PIPELINE"], [2, 3], 4)}
+                  <h2 className="headline-act-4 opacity-0 text-4xl sm:text-6xl font-black text-white tracking-tight leading-tight uppercase font-sans">
+                    CALIBRATE YOUR <br />
+                    <span className="text-[#f3d46b]">CAPITAL PIPELINE</span>
                   </h2>
                   <p className="sub-act-4 opacity-0 text-zinc-400 text-sm font-light leading-relaxed max-w-md mx-auto">
                     Generate an interactive, high-density 12-month Investor Relations and narrative campaign strategy calibrated for your traction, stage, and goals.
