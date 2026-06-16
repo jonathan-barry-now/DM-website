@@ -88,16 +88,23 @@ export function WatchToComputer({ onApplyClick }: WatchToComputerProps) {
     renderer.toneMappingExposure = 1.2;
 
     // 3. Cinematic Golden Lighting
-    const ambientLight = new THREE.AmbientLight(0x0a0a0a);
+    const ambientLight = new THREE.AmbientLight(0xffffff, 3.0);
     scene.add(ambientLight);
 
-    const keyLight = new THREE.DirectionalLight(0xffffff, 3.5);
+    const keyLight = new THREE.DirectionalLight(0xffffff, 5.0);
     keyLight.position.set(5, 8, 5);
     scene.add(keyLight);
 
-    const fillLight = new THREE.PointLight(0xf3d46b, 4, 18);
+    const fillLight = new THREE.PointLight(0xf3d46b, 8, 20);
     fillLight.position.set(-4, -2, 3);
     scene.add(fillLight);
+
+    // Strong gold spotlight from the front
+    const spotLight = new THREE.SpotLight(0xf3d46b, 15.0);
+    spotLight.position.set(0, 0, 8);
+    spotLight.angle = Math.PI / 4;
+    spotLight.penumbra = 0.5;
+    scene.add(spotLight);
 
     // Dynamic Qubit Core light
     const coreLight = new THREE.PointLight(0xf3d46b, 0, 10);
@@ -125,19 +132,23 @@ export function WatchToComputer({ onApplyClick }: WatchToComputerProps) {
     const goldMaterial = new THREE.MeshStandardMaterial({
       color: 0xC9A24B,
       metalness: 0.9,
-      roughness: 0.18,
+      roughness: 0.1,
+      emissive: new THREE.Color(0xC9A24B),
+      emissiveIntensity: 0.4,
     });
 
     const highlightMat = new THREE.MeshStandardMaterial({
       color: 0xf3d46b,
-      metalness: 0.95,
+      metalness: 0.9,
       roughness: 0.1,
+      emissive: new THREE.Color(0xf3d46b),
+      emissiveIntensity: 0.4,
     });
 
     const darkCasingMat = new THREE.MeshStandardMaterial({
-      color: 0x141414,
-      metalness: 0.85,
-      roughness: 0.35,
+      color: 0x1f1f1f,
+      metalness: 0.9,
+      roughness: 0.2,
     });
 
     const coreGlowMat = new THREE.MeshBasicMaterial({
@@ -186,7 +197,7 @@ export function WatchToComputer({ onApplyClick }: WatchToComputerProps) {
     watchGroup.add(casingRing);
 
     const backPlateGeo = new THREE.CylinderGeometry(3.1, 3.1, 0.15, 64);
-    const backPlate = new THREE.Mesh(backPlateGeo, darkCasingMat);
+    const backPlate = new THREE.Mesh(backPlateGeo, goldMaterial);
     backPlate.position.z = -0.2;
     backPlate.rotation.x = Math.PI / 2;
     watchGroup.add(backPlate);
@@ -198,6 +209,7 @@ export function WatchToComputer({ onApplyClick }: WatchToComputerProps) {
     watchGroup.add(dialPlate);
 
     // Numerals/Markers
+    const markers: THREE.Mesh[] = [];
     const markerGeo = new THREE.BoxGeometry(0.06, 0.3, 0.05);
     for (let i = 0; i < 12; i++) {
       const angle = (i / 12) * Math.PI * 2;
@@ -206,6 +218,7 @@ export function WatchToComputer({ onApplyClick }: WatchToComputerProps) {
       marker.position.y = Math.sin(angle) * 2.5;
       marker.rotation.z = angle;
       watchGroup.add(marker);
+      markers.push(marker);
     }
 
     // Internal Gears (Explodable)
@@ -247,7 +260,7 @@ export function WatchToComputer({ onApplyClick }: WatchToComputerProps) {
     secHandPivot.add(secHand);
     handsGroup.add(secHandPivot);
 
-    // 8. Quantum Computer Model Group
+    // 8. Quantum Computer Model Group (Elongated to fill vertical screen area)
     const qcGroup = new THREE.Group();
     qcGroup.scale.setScalar(0.0001);
     scene.add(qcGroup);
@@ -255,39 +268,39 @@ export function WatchToComputer({ onApplyClick }: WatchToComputerProps) {
     // Top Plate Flange
     const topPlateGeo = new THREE.CylinderGeometry(2.8, 2.8, 0.12, 64);
     const topPlate = new THREE.Mesh(topPlateGeo, goldMaterial);
-    topPlate.position.y = 3;
+    topPlate.position.y = 4.2;
     qcGroup.add(topPlate);
 
     // Middle Plate
     const midPlateGeo = new THREE.CylinderGeometry(2.2, 2.2, 0.1, 64);
     const midPlate = new THREE.Mesh(midPlateGeo, goldMaterial);
-    midPlate.position.y = 0;
+    midPlate.position.y = 0.5;
     qcGroup.add(midPlate);
 
     // Bottom Plate
     const botPlateGeo = new THREE.CylinderGeometry(1.6, 1.6, 0.08, 64);
     const botPlate = new THREE.Mesh(botPlateGeo, goldMaterial);
-    botPlate.position.y = -3;
+    botPlate.position.y = -3.2;
     qcGroup.add(botPlate);
 
-    // Connecting rods
+    // Connecting rods (taller stack support)
     for (let i = 0; i < 4; i++) {
       const angle = (i / 4) * Math.PI * 2;
       const px = Math.cos(angle) * 1.3;
       const pz = Math.sin(angle) * 1.3;
-      const rodGeo = new THREE.CylinderGeometry(0.06, 0.06, 6, 16);
+      const rodGeo = new THREE.CylinderGeometry(0.06, 0.06, 7.8, 16);
       const rod = new THREE.Mesh(rodGeo, goldMaterial);
-      rod.position.set(px, 0, pz);
+      rod.position.set(px, 0.5, pz);
       qcGroup.add(rod);
     }
 
-    // Curved waveguide gold cables
+    // Curved waveguide gold cables spanning over the elongated frame
     for (let i = 0; i < 6; i++) {
       const angle = (i / 6) * Math.PI * 2;
       const points = [
-        new THREE.Vector3(Math.cos(angle) * 2.4, 3, Math.sin(angle) * 2.4),
+        new THREE.Vector3(Math.cos(angle) * 2.4, 4.2, Math.sin(angle) * 2.4),
         new THREE.Vector3(Math.cos(angle + 0.6) * 1.8, 0.5, Math.sin(angle + 0.6) * 1.8),
-        new THREE.Vector3(Math.cos(angle - 0.4) * 1.2, -2.9, Math.sin(angle - 0.4) * 1.2),
+        new THREE.Vector3(Math.cos(angle - 0.4) * 1.2, -3.1, Math.sin(angle - 0.4) * 1.2),
       ];
       const curve = new THREE.CatmullRomCurve3(points);
       const tubeGeo = new THREE.TubeGeometry(curve, 32, 0.035, 8, false);
@@ -295,7 +308,7 @@ export function WatchToComputer({ onApplyClick }: WatchToComputerProps) {
       qcGroup.add(tube);
     }
 
-    // Bottom Cryo Shroud (Wireframe can)
+    // Bottom Cryo Shroud (Wireframe can - elongated to 3.0 units)
     const canMat = new THREE.MeshStandardMaterial({
       color: 0xC9A24B,
       metalness: 0.9,
@@ -304,15 +317,15 @@ export function WatchToComputer({ onApplyClick }: WatchToComputerProps) {
       opacity: 0.18,
       wireframe: true,
     });
-    const canGeo = new THREE.CylinderGeometry(1.58, 1.58, 2.4, 32, 4, true);
+    const canGeo = new THREE.CylinderGeometry(1.58, 1.58, 3.0, 32, 4, true);
     const cryoCan = new THREE.Mesh(canGeo, canMat);
-    cryoCan.position.y = -1.8;
+    cryoCan.position.y = -1.75;
     qcGroup.add(cryoCan);
 
     // Glowing Core Mesh
     const coreMeshGeo = new THREE.SphereGeometry(0.4, 32, 32);
     const coreMesh = new THREE.Mesh(coreMeshGeo, coreGlowMat);
-    coreMesh.position.y = -3;
+    coreMesh.position.y = -3.2;
     qcGroup.add(coreMesh);
 
     // Floating micro-nodes
@@ -324,7 +337,7 @@ export function WatchToComputer({ onApplyClick }: WatchToComputerProps) {
       const theta = Math.random() * Math.PI * 2;
       node.position.set(
         Math.cos(theta) * rad,
-        -3 + (Math.random() - 0.5) * 0.8,
+        -3.2 + (Math.random() - 0.5) * 0.8,
         Math.sin(theta) * rad
       );
       nodesGroup.add(node);
@@ -345,16 +358,17 @@ export function WatchToComputer({ onApplyClick }: WatchToComputerProps) {
 
       // QC assembly metrics
       qcScale: 0.0001,
-      qcTopY: 5,
-      qcBotY: -5,
-      qcCanY: -4.5,
+      qcTopY: 6.5,
+      qcBotY: -6.5,
+      qcCanY: -5.5,
       qcCoreScale: 0,
       qcCoreIntensity: 0,
 
       // Camera positioning parameters
-      camX: 0,
+      camX: -1.8,
       camY: 0,
-      camZ: 8,
+      camZ: 7.2,
+      lookAtX: 0.5,
       lookAtY: 0,
     };
 
@@ -384,12 +398,14 @@ export function WatchToComputer({ onApplyClick }: WatchToComputerProps) {
 
     // Act I to Act II: Watch Explodes, Text crossfades
     tl.to(animObj, {
-      casingOffsetZ: 2.5,
-      dialOffsetZ: -1.6,
-      gearsOffset: 2.0,
-      handsOffsetZ: 1.0,
-      watchRotX: 0.3,
-      watchRotY: 0.5,
+      casingOffsetZ: 2.8,
+      dialOffsetZ: -2.0,
+      gearsOffset: 2.4,
+      handsOffsetZ: 1.4,
+      watchRotX: 0.35,
+      watchRotY: 0.6,
+      camX: -1.5,
+      camZ: 7.8, // pull camera back slightly during explosion to view all scattered cogs
       duration: 1.5,
       ease: "power1.inOut",
     })
@@ -401,24 +417,28 @@ export function WatchToComputer({ onApplyClick }: WatchToComputerProps) {
     .to(animObj, {
       watchScale: 0.001,
       qcScale: 1.0,
-      qcTopY: 3,
-      qcBotY: -3,
-      qcCanY: -1.8,
+      qcTopY: 4.2,
+      qcBotY: -3.2,
+      qcCanY: -1.75,
       qcCoreScale: 1.0,
       qcCoreIntensity: 6,
+      camX: -1.8,
+      camY: 0.5,
+      camZ: 7.0, // closer look at the elongated vertical QC structure
       duration: 1.5,
       ease: "power2.inOut",
     })
     .to(".text-act-2", { opacity: 0, y: -40, duration: 0.6 }, 1.9)
     .to(".text-act-3", { opacity: 1, y: 0, duration: 0.8 }, 2.4)
 
-    // Act III to CTA: Camera plunges inside QC Core close-up
+    // Act III to CTA: Camera plunges inside QC Core close-up (aligned directly centered)
     .to(animObj, {
-      camX: 0.8,
-      camY: -3.0,
-      camZ: 3.2,
-      lookAtY: -3.0,
-      qcCoreIntensity: 10,
+      camX: 0.0,
+      camY: -3.2,
+      camZ: 2.6,
+      lookAtX: 0.0,
+      lookAtY: -3.2,
+      qcCoreIntensity: 12,
       duration: 1.5,
       ease: "power2.inOut",
     })
@@ -454,33 +474,42 @@ export function WatchToComputer({ onApplyClick }: WatchToComputerProps) {
       particles.rotation.y = elapsed * 0.015;
       particles.rotation.x = elapsed * 0.008;
 
-      // Apply exploded metrics
-      casingRing.position.z = animObj.casingOffsetZ;
-      backPlate.position.z = -0.2 - animObj.casingOffsetZ * 0.3;
-      dialPlate.position.z = -animObj.dialOffsetZ * 0.3;
+      // Apply exploded metrics - scatter watch casing horizontally for full-screen disassembly visual
+      casingRing.position.set(animObj.gearsOffset * 0.5, 0, animObj.casingOffsetZ);
+      backPlate.position.set(-animObj.gearsOffset * 0.5, 0, -0.2 - animObj.casingOffsetZ * 0.4);
+      dialPlate.position.set(-animObj.gearsOffset * 0.35, -animObj.gearsOffset * 0.35, -animObj.dialOffsetZ * 0.3);
       handsGroup.position.z = 0.22 + animObj.handsOffsetZ;
 
-      // Radially scatter gears
-      gear1.position.set(-0.6 - animObj.gearsOffset * 0.4, -0.6 - animObj.gearsOffset * 0.4, 0.1 - animObj.dialOffsetZ * 0.2);
-      gear2.position.set(0.8 + animObj.gearsOffset * 0.5, -0.4 - animObj.gearsOffset * 0.3, 0.1 - animObj.dialOffsetZ * 0.2);
-      gear3.position.set(0.5 + animObj.gearsOffset * 0.3, 0.6 + animObj.gearsOffset * 0.4, 0.1 - animObj.dialOffsetZ * 0.2);
+      // Radially scatter gears aggressively across the visible screen
+      gear1.position.set(-0.6 - animObj.gearsOffset * 0.7, -0.6 - animObj.gearsOffset * 0.7, 0.1 - animObj.dialOffsetZ * 0.2);
+      gear2.position.set(0.8 + animObj.gearsOffset * 0.8, -0.4 - animObj.gearsOffset * 0.5, 0.1 - animObj.dialOffsetZ * 0.2);
+      gear3.position.set(0.5 + animObj.gearsOffset * 0.5, 0.6 + animObj.gearsOffset * 0.6, 0.1 - animObj.dialOffsetZ * 0.2);
+
+      // Explode numerals/markers radially outward in an expanding circle
+      markers.forEach((marker, i) => {
+        const angle = (i / 12) * Math.PI * 2;
+        const dist = 2.5 + animObj.gearsOffset * 1.5;
+        marker.position.set(Math.cos(angle) * dist, Math.sin(angle) * dist, animObj.handsOffsetZ * 0.3);
+      });
 
       // Rotate/Scale watch
       watchGroup.scale.setScalar(animObj.watchScale);
       watchGroup.rotation.set(animObj.watchRotX, animObj.watchRotY + elapsed * 0.05, 0);
 
-      // Assemble QC
+      // Assemble QC (taller components)
       qcGroup.scale.setScalar(animObj.qcScale);
       qcGroup.rotation.y = elapsed * 0.08;
       topPlate.position.y = animObj.qcTopY;
       botPlate.position.y = animObj.qcBotY;
       cryoCan.position.y = animObj.qcCanY;
+      coreMesh.position.y = animObj.qcBotY; // keep core aligned with bottom plate
       coreMesh.scale.setScalar(animObj.qcCoreScale);
+      coreLight.position.y = animObj.qcBotY;
       coreLight.intensity = animObj.qcCoreIntensity;
 
       // Camera & Camera target positioning
       camera.position.set(animObj.camX, animObj.camY, animObj.camZ);
-      camera.lookAt(0, animObj.lookAtY, 0);
+      camera.lookAt(animObj.lookAtX, animObj.lookAtY, 0);
 
       renderer.render(scene, camera);
       animationFrameId = requestAnimationFrame(render);
