@@ -8,27 +8,11 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: Arial, Helvetica, sans-serif;
+  --font-sans: var(--font-space-grotesk), Arial, Helvetica, sans-serif;
+  --font-space: var(--font-space-grotesk), Arial, Helvetica, sans-serif;
   --font-mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
-  --animate-blob: blob 7s infinite;
-
-  --color-gold: #d4af37;
-  --color-gold-light: #f3e5ab;
-  --color-dark-blue: #020817;
-
-  @keyframes blob {
-    0% { transform: translate(0px, 0px) scale(1); }
-    33% { transform: translate(30px, -50px) scale(1.1); }
-    66% { transform: translate(-20px, 20px) scale(0.9); }
-    100% { transform: translate(0px, 0px) scale(1); }
-  }
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #000000;
-    --foreground: #ffffff;
-  }
+  --color-gold: #f3d46b;
+  --color-gold-light: #fff1a6;
 }
 
 /* Base Styles */
@@ -39,7 +23,7 @@ html {
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-space-grotesk), Arial, Helvetica, sans-serif;
   overflow-x: hidden;
 }
 
