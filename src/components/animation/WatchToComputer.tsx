@@ -4,7 +4,7 @@ import React, { useEffect, useRef, useState } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import Lenis from "lenis";
-import * as THREE from "three";
+
 
 if (typeof window !== "undefined") {
   gsap.registerPlugin(ScrollTrigger);
@@ -16,12 +16,38 @@ interface WatchToComputerProps {
 
 export function WatchToComputer({ onApplyClick }: WatchToComputerProps) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
   const lenisRef = useRef<Lenis | null>(null);
+
+  const bgContainerRef = useRef<HTMLDivElement>(null);
+  const img1Ref = useRef<HTMLDivElement>(null);
+  const img2Ref = useRef<HTMLDivElement>(null);
+  const img3Ref = useRef<HTMLDivElement>(null);
 
   const [loadingProgress, setLoadingProgress] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [currentActIndex, setCurrentActIndex] = useState(0);
+
+  // Helper to render headlines split word-by-word for scroll slide-up reveals
+  const renderSplitHeadline = (words: string[], highlightIndexes: number[], actNum: number) => {
+    return (
+      <span className="inline-flex flex-wrap gap-x-2 sm:gap-x-3 gap-y-1 sm:gap-y-2 leading-tight uppercase font-black text-white font-sans">
+        {words.map((word, index) => {
+          const isHighlighted = highlightIndexes.includes(index);
+          return (
+            <span key={index} className="inline-block overflow-hidden py-1">
+              <span 
+                className={`inline-block translate-y-full word-act-${actNum} ${
+                  isHighlighted ? "text-[#f3d46b]" : "text-white"
+                }`}
+              >
+                {word}
+              </span>
+            </span>
+          );
+        })}
+      </span>
+    );
+  };
 
   // Loading Screen simulation
   useEffect(() => {
@@ -41,12 +67,12 @@ export function WatchToComputer({ onApplyClick }: WatchToComputerProps) {
     return () => clearInterval(interval);
   }, []);
 
-  // WebGL & GSAP Scroll Trigger integration
+  // GSAP Scroll Trigger & Parallax integration
   useEffect(() => {
     if (isLoading) return;
-    if (!canvasRef.current || !containerRef.current) return;
+    if (!containerRef.current) return;
 
-    // 1. Lenis Smooth Scroll Initialization
+    // 1. Lenis Smooth Scroll Initialization synchronized via GSAP Ticker
     const lenis = new Lenis({
       duration: 1.2,
       easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
@@ -54,325 +80,19 @@ export function WatchToComputer({ onApplyClick }: WatchToComputerProps) {
     });
     lenisRef.current = lenis;
 
-    function raf(time: number) {
-      lenis.raf(time);
-      requestAnimationFrame(raf);
-    }
-    const rafId = requestAnimationFrame(raf);
-
-    // Bind scroll updates to ScrollTrigger
-    lenis.on("scroll", ScrollTrigger.update);
-    gsap.ticker.add((time) => {
+    // Use GSAP ticker to drive Lenis raf loop
+    const updateLenis = (time: number) => {
       lenis.raf(time * 1000);
-    });
-
-    // 2. Three.js Scene Setup
-    const width = canvasRef.current.clientWidth;
-    const height = canvasRef.current.clientHeight;
-
-    const scene = new THREE.Scene();
-    scene.fog = new THREE.FogExp2(0x000000, 0.08);
-
-    const camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 100);
-    camera.position.set(0, 0, 8);
-
-    const renderer = new THREE.WebGLRenderer({
-      canvas: canvasRef.current,
-      antialias: true,
-      alpha: true,
-      powerPreference: "high-performance",
-    });
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-    renderer.setSize(width, height);
-    renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.2;
-
-    // 3. Cinematic Golden Lighting
-    const ambientLight = new THREE.AmbientLight(0xffffff, 3.0);
-    scene.add(ambientLight);
-
-    const keyLight = new THREE.DirectionalLight(0xffffff, 5.0);
-    keyLight.position.set(5, 8, 5);
-    scene.add(keyLight);
-
-    const fillLight = new THREE.PointLight(0xf3d46b, 8, 20);
-    fillLight.position.set(-4, -2, 3);
-    scene.add(fillLight);
-
-    // Strong gold spotlight from the front
-    const spotLight = new THREE.SpotLight(0xf3d46b, 15.0);
-    spotLight.position.set(0, 0, 8);
-    spotLight.angle = Math.PI / 4;
-    spotLight.penumbra = 0.5;
-    scene.add(spotLight);
-
-    // Dynamic Qubit Core light
-    const coreLight = new THREE.PointLight(0xf3d46b, 0, 10);
-    coreLight.position.set(0, -3, 0);
-    scene.add(coreLight);
-
-    // 4. Background Cinematic Dust Particles
-    const particlesGeo = new THREE.BufferGeometry();
-    const particlesCount = 250;
-    const posArray = new Float32Array(particlesCount * 3);
-    for (let i = 0; i < particlesCount * 3; i++) {
-      posArray[i] = (Math.random() - 0.5) * 16;
-    }
-    particlesGeo.setAttribute("position", new THREE.BufferAttribute(posArray, 3));
-    const particlesMat = new THREE.PointsMaterial({
-      size: 0.04,
-      color: 0xf3d46b,
-      transparent: true,
-      opacity: 0.35,
-    });
-    const particles = new THREE.Points(particlesGeo, particlesMat);
-    scene.add(particles);
-
-    // 5. Materials Setup
-    const goldMaterial = new THREE.MeshStandardMaterial({
-      color: 0xC9A24B,
-      metalness: 0.9,
-      roughness: 0.1,
-      emissive: new THREE.Color(0xC9A24B),
-      emissiveIntensity: 0.4,
-    });
-
-    const highlightMat = new THREE.MeshStandardMaterial({
-      color: 0xf3d46b,
-      metalness: 0.9,
-      roughness: 0.1,
-      emissive: new THREE.Color(0xf3d46b),
-      emissiveIntensity: 0.4,
-    });
-
-    const darkCasingMat = new THREE.MeshStandardMaterial({
-      color: 0x1f1f1f,
-      metalness: 0.9,
-      roughness: 0.2,
-    });
-
-    const coreGlowMat = new THREE.MeshBasicMaterial({
-      color: 0xf3d46b,
-    });
-
-    // 6. Helper: Procedural Gear Generator
-    function createProceduralGear(radius: number, thickness: number, teethCount: number) {
-      const gearGroup = new THREE.Group();
-      
-      // Core disc
-      const coreGeo = new THREE.CylinderGeometry(radius * 0.8, radius * 0.8, thickness, 32);
-      const core = new THREE.Mesh(coreGeo, goldMaterial);
-      core.rotation.x = Math.PI / 2;
-      gearGroup.add(core);
-
-      // Spokes
-      for (let i = 0; i < 4; i++) {
-        const spokeGeo = new THREE.BoxGeometry(radius * 1.6, thickness * 0.7, radius * 0.12);
-        const spoke = new THREE.Mesh(spokeGeo, goldMaterial);
-        spoke.rotation.z = (i * Math.PI) / 4;
-        gearGroup.add(spoke);
-      }
-
-      // Outer Teeth
-      const toothGeo = new THREE.BoxGeometry(radius * 0.16, thickness * 1.1, radius * 0.16);
-      for (let i = 0; i < teethCount; i++) {
-        const angle = (i / teethCount) * Math.PI * 2;
-        const tooth = new THREE.Mesh(toothGeo, highlightMat);
-        tooth.position.x = Math.cos(angle) * radius;
-        tooth.position.y = Math.sin(angle) * radius;
-        tooth.rotation.z = angle;
-        gearGroup.add(tooth);
-      }
-
-      return gearGroup;
-    }
-
-    // 7. Watch Model Group
-    const watchGroup = new THREE.Group();
-    scene.add(watchGroup);
-
-    // Casing
-    const casingRingGeo = new THREE.TorusGeometry(3.2, 0.3, 16, 100);
-    const casingRing = new THREE.Mesh(casingRingGeo, goldMaterial);
-    watchGroup.add(casingRing);
-
-    const backPlateGeo = new THREE.CylinderGeometry(3.1, 3.1, 0.15, 64);
-    const backPlate = new THREE.Mesh(backPlateGeo, goldMaterial);
-    backPlate.position.z = -0.2;
-    backPlate.rotation.x = Math.PI / 2;
-    watchGroup.add(backPlate);
-
-    // Dial face plate
-    const dialPlateGeo = new THREE.CylinderGeometry(2.9, 2.9, 0.08, 64);
-    const dialPlate = new THREE.Mesh(dialPlateGeo, darkCasingMat);
-    dialPlate.rotation.x = Math.PI / 2;
-    watchGroup.add(dialPlate);
-
-    // Numerals/Markers
-    const markers: THREE.Mesh[] = [];
-    const markerGeo = new THREE.BoxGeometry(0.06, 0.3, 0.05);
-    for (let i = 0; i < 12; i++) {
-      const angle = (i / 12) * Math.PI * 2;
-      const marker = new THREE.Mesh(markerGeo, highlightMat);
-      marker.position.x = Math.cos(angle) * 2.5;
-      marker.position.y = Math.sin(angle) * 2.5;
-      marker.rotation.z = angle;
-      watchGroup.add(marker);
-      markers.push(marker);
-    }
-
-    // Internal Gears (Explodable)
-    const gear1 = createProceduralGear(1.1, 0.12, 14);
-    gear1.position.set(-0.6, -0.6, 0.1);
-    watchGroup.add(gear1);
-
-    const gear2 = createProceduralGear(0.8, 0.1, 10);
-    gear2.position.set(0.8, -0.4, 0.1);
-    watchGroup.add(gear2);
-
-    const gear3 = createProceduralGear(0.6, 0.08, 8);
-    gear3.position.set(0.5, 0.6, 0.1);
-    watchGroup.add(gear3);
-
-    // Watch Hands
-    const handsGroup = new THREE.Group();
-    handsGroup.position.z = 0.22;
-    watchGroup.add(handsGroup);
-
-    const hourHandGeo = new THREE.BoxGeometry(0.12, 1.2, 0.04);
-    const hourHand = new THREE.Mesh(hourHandGeo, highlightMat);
-    hourHand.position.y = 0.5;
-    const hourHandPivot = new THREE.Group();
-    hourHandPivot.add(hourHand);
-    handsGroup.add(hourHandPivot);
-
-    const minHandGeo = new THREE.BoxGeometry(0.08, 1.8, 0.04);
-    const minHand = new THREE.Mesh(minHandGeo, highlightMat);
-    minHand.position.y = 0.8;
-    const minHandPivot = new THREE.Group();
-    minHandPivot.add(minHand);
-    handsGroup.add(minHandPivot);
-
-    const secHandGeo = new THREE.BoxGeometry(0.03, 2.1, 0.02);
-    const secHand = new THREE.Mesh(secHandGeo, highlightMat);
-    secHand.position.y = 0.9;
-    const secHandPivot = new THREE.Group();
-    secHandPivot.add(secHand);
-    handsGroup.add(secHandPivot);
-
-    // 8. Quantum Computer Model Group (Elongated to fill vertical screen area)
-    const qcGroup = new THREE.Group();
-    qcGroup.scale.setScalar(0.0001);
-    scene.add(qcGroup);
-
-    // Top Plate Flange
-    const topPlateGeo = new THREE.CylinderGeometry(2.8, 2.8, 0.12, 64);
-    const topPlate = new THREE.Mesh(topPlateGeo, goldMaterial);
-    topPlate.position.y = 4.2;
-    qcGroup.add(topPlate);
-
-    // Middle Plate
-    const midPlateGeo = new THREE.CylinderGeometry(2.2, 2.2, 0.1, 64);
-    const midPlate = new THREE.Mesh(midPlateGeo, goldMaterial);
-    midPlate.position.y = 0.5;
-    qcGroup.add(midPlate);
-
-    // Bottom Plate
-    const botPlateGeo = new THREE.CylinderGeometry(1.6, 1.6, 0.08, 64);
-    const botPlate = new THREE.Mesh(botPlateGeo, goldMaterial);
-    botPlate.position.y = -3.2;
-    qcGroup.add(botPlate);
-
-    // Connecting rods (taller stack support)
-    for (let i = 0; i < 4; i++) {
-      const angle = (i / 4) * Math.PI * 2;
-      const px = Math.cos(angle) * 1.3;
-      const pz = Math.sin(angle) * 1.3;
-      const rodGeo = new THREE.CylinderGeometry(0.06, 0.06, 7.8, 16);
-      const rod = new THREE.Mesh(rodGeo, goldMaterial);
-      rod.position.set(px, 0.5, pz);
-      qcGroup.add(rod);
-    }
-
-    // Curved waveguide gold cables spanning over the elongated frame
-    for (let i = 0; i < 6; i++) {
-      const angle = (i / 6) * Math.PI * 2;
-      const points = [
-        new THREE.Vector3(Math.cos(angle) * 2.4, 4.2, Math.sin(angle) * 2.4),
-        new THREE.Vector3(Math.cos(angle + 0.6) * 1.8, 0.5, Math.sin(angle + 0.6) * 1.8),
-        new THREE.Vector3(Math.cos(angle - 0.4) * 1.2, -3.1, Math.sin(angle - 0.4) * 1.2),
-      ];
-      const curve = new THREE.CatmullRomCurve3(points);
-      const tubeGeo = new THREE.TubeGeometry(curve, 32, 0.035, 8, false);
-      const tube = new THREE.Mesh(tubeGeo, goldMaterial);
-      qcGroup.add(tube);
-    }
-
-    // Bottom Cryo Shroud (Wireframe can - elongated to 3.0 units)
-    const canMat = new THREE.MeshStandardMaterial({
-      color: 0xC9A24B,
-      metalness: 0.9,
-      roughness: 0.15,
-      transparent: true,
-      opacity: 0.18,
-      wireframe: true,
-    });
-    const canGeo = new THREE.CylinderGeometry(1.58, 1.58, 3.0, 32, 4, true);
-    const cryoCan = new THREE.Mesh(canGeo, canMat);
-    cryoCan.position.y = -1.75;
-    qcGroup.add(cryoCan);
-
-    // Glowing Core Mesh
-    const coreMeshGeo = new THREE.SphereGeometry(0.4, 32, 32);
-    const coreMesh = new THREE.Mesh(coreMeshGeo, coreGlowMat);
-    coreMesh.position.y = -3.2;
-    qcGroup.add(coreMesh);
-
-    // Floating micro-nodes
-    const nodesGroup = new THREE.Group();
-    for (let i = 0; i < 15; i++) {
-      const nodeGeo = new THREE.SphereGeometry(0.06, 16, 16);
-      const node = new THREE.Mesh(nodeGeo, coreGlowMat);
-      const rad = 0.6 + Math.random() * 0.7;
-      const theta = Math.random() * Math.PI * 2;
-      node.position.set(
-        Math.cos(theta) * rad,
-        -3.2 + (Math.random() - 0.5) * 0.8,
-        Math.sin(theta) * rad
-      );
-      nodesGroup.add(node);
-    }
-    qcGroup.add(nodesGroup);
-
-    // 9. GSAP Scroll Animation Control Object
-    const animObj = {
-      watchScale: 1.0,
-      watchRotX: 0,
-      watchRotY: 0,
-      
-      // Explosion metrics
-      casingOffsetZ: 0,
-      dialOffsetZ: 0,
-      gearsOffset: 0,
-      handsOffsetZ: 0,
-
-      // QC assembly metrics
-      qcScale: 0.0001,
-      qcTopY: 6.5,
-      qcBotY: -6.5,
-      qcCanY: -5.5,
-      qcCoreScale: 0,
-      qcCoreIntensity: 0,
-
-      // Camera positioning parameters
-      camX: -1.8,
-      camY: 0,
-      camZ: 7.2,
-      lookAtX: 0.5,
-      lookAtY: 0,
     };
+    gsap.ticker.add(updateLenis);
+    gsap.ticker.lagSmoothing(0);
 
-    // 10. Master GSAP ScrollTrigger Timeline
+    // Sync ScrollTrigger on scroll
+    lenis.on("scroll", () => {
+      ScrollTrigger.update();
+    });
+
+    // 2. Master GSAP ScrollTrigger Timeline
     const tl = gsap.timeline({
       scrollTrigger: {
         trigger: containerRef.current,
@@ -396,155 +116,94 @@ export function WatchToComputer({ onApplyClick }: WatchToComputerProps) {
       },
     });
 
-    // Act I to Act II: Watch Explodes, Text crossfades
-    tl.to(animObj, {
-      casingOffsetZ: 2.8,
-      dialOffsetZ: -2.0,
-      gearsOffset: 2.4,
-      handsOffsetZ: 1.4,
-      watchRotX: 0.35,
-      watchRotY: 0.6,
-      camX: -1.5,
-      camZ: 7.8, // pull camera back slightly during explosion to view all scattered cogs
-      duration: 1.5,
-      ease: "power1.inOut",
-    })
-    // Fade overlay Act I text out, reveal Act II text
-    .to(".text-act-1", { opacity: 0, y: -40, duration: 0.6 }, 0.4)
-    .to(".text-act-2", { opacity: 1, y: 0, duration: 0.8 }, 0.9)
+    // --- Background Image Controls ---
+    // Act I background scale and parallax
+    tl.fromTo(img1Ref.current, 
+      { scale: 1.0, backgroundPositionY: "35%" }, 
+      { scale: 1.12, backgroundPositionY: "65%", ease: "none", duration: 1.5 }, 
+      0
+    );
+    
+    // Act II background scale and parallax
+    tl.fromTo(img2Ref.current, 
+      { scale: 1.0, backgroundPositionY: "35%" }, 
+      { scale: 1.12, backgroundPositionY: "65%", ease: "none", duration: 1.5 }, 
+      1.5
+    );
+    
+    // Act III background scale and parallax
+    tl.fromTo(img3Ref.current, 
+      { scale: 1.0, backgroundPositionY: "35%" }, 
+      { scale: 1.12, backgroundPositionY: "65%", ease: "none", duration: 1.5 }, 
+      3.0
+    );
 
-    // Act II to Act III: Morph to QC, Plates slide together, Can attaches
-    .to(animObj, {
-      watchScale: 0.001,
-      qcScale: 1.0,
-      qcTopY: 4.2,
-      qcBotY: -3.2,
-      qcCanY: -1.75,
-      qcCoreScale: 1.0,
-      qcCoreIntensity: 6,
-      camX: -1.8,
-      camY: 0.5,
-      camZ: 7.0, // closer look at the elongated vertical QC structure
-      duration: 1.5,
-      ease: "power2.inOut",
-    })
-    .to(".text-act-2", { opacity: 0, y: -40, duration: 0.6 }, 1.9)
-    .to(".text-act-3", { opacity: 1, y: 0, duration: 0.8 }, 2.4)
+    // --- Background Crossfades ---
+    // Act I to Act II crossfade
+    tl.to(img1Ref.current, { opacity: 0, duration: 0.8, ease: "power1.inOut" }, 0.4)
+      .to(img2Ref.current, { opacity: 1, duration: 0.8, ease: "power1.inOut" }, 0.4);
 
-    // Act III to CTA: Camera plunges inside QC Core close-up (aligned directly centered)
-    .to(animObj, {
-      camX: 0.0,
-      camY: -3.2,
-      camZ: 2.6,
-      lookAtX: 0.0,
-      lookAtY: -3.2,
-      qcCoreIntensity: 12,
-      duration: 1.5,
-      ease: "power2.inOut",
-    })
-    .to(".text-act-3", { opacity: 0, y: -40, duration: 0.6 }, 3.4)
-    .to(".text-act-4", { opacity: 1, y: 0, duration: 0.8 }, 3.9);
+    // Act II to Act III crossfade
+    tl.to(img2Ref.current, { opacity: 0, duration: 0.8, ease: "power1.inOut" }, 1.9)
+      .to(img3Ref.current, { opacity: 1, duration: 0.8, ease: "power1.inOut" }, 1.9);
 
-    // 11. Render Loop
-    const clock = new THREE.Clock();
-    let animationFrameId = 0;
+    // Act III to CTA background fade out
+    tl.to(img3Ref.current, { opacity: 0, duration: 0.8, ease: "power1.inOut" }, 3.4);
 
-    const render = () => {
-      const elapsed = clock.getElapsedTime();
+    // --- Text Reveals ---
+    // Act I Text Out
+    tl.to(".text-act-1", { opacity: 0, y: -40, duration: 0.6, ease: "power1.inOut" }, 0.4);
 
-      // Dynamic ticking/sweeping of hands in Act I
-      if (animObj.watchScale > 0.01) {
-        secHandPivot.rotation.z = -elapsed * 0.6;
-        minHandPivot.rotation.z = -elapsed * 0.6 / 60;
-        hourHandPivot.rotation.z = -elapsed * 0.6 / 720;
+    // Act II Text In
+    tl.to(".label-act-2", { opacity: 1, duration: 0.4 }, 0.9)
+      .to(".word-act-2", { y: 0, duration: 0.6, stagger: 0.05, ease: "power2.out" }, 0.9)
+      .to(".sub-act-2", { opacity: 1, duration: 0.4 }, 1.2)
+      // Act II Text Out
+      .to(".text-act-2", { opacity: 0, y: -40, duration: 0.6, ease: "power1.inOut" }, 1.9);
 
-        // Gears spinning at gear ratios
-        gear1.rotation.y = elapsed * 0.2;
-        gear2.rotation.y = -elapsed * 0.28;
-        gear3.rotation.y = elapsed * 0.36;
-      }
+    // Act III Text In
+    tl.to(".label-act-3", { opacity: 1, duration: 0.4 }, 2.4)
+      .to(".word-act-3", { y: 0, duration: 0.6, stagger: 0.05, ease: "power2.out" }, 2.4)
+      .to(".sub-act-3", { opacity: 1, duration: 0.4 }, 2.7)
+      // Act III Text Out
+      .to(".text-act-3", { opacity: 0, y: -40, duration: 0.6, ease: "power1.inOut" }, 3.4);
 
-      // Rotate nodes and core
-      if (animObj.qcScale > 0.01) {
-        nodesGroup.rotation.y = elapsed * 0.25;
-        coreMesh.rotation.y = elapsed * 0.15;
-      }
+    // Act IV Text In
+    tl.to(".label-act-4", { opacity: 1, duration: 0.4 }, 3.9)
+      .to(".word-act-4", { y: 0, duration: 0.6, stagger: 0.05, ease: "power2.out" }, 3.9)
+      .to(".sub-act-4", { opacity: 1, duration: 0.4 }, 4.2);
 
-      // Slowly rotate backdrop dust
-      particles.rotation.y = elapsed * 0.015;
-      particles.rotation.x = elapsed * 0.008;
-
-      // Apply exploded metrics - scatter watch casing horizontally for full-screen disassembly visual
-      casingRing.position.set(animObj.gearsOffset * 0.5, 0, animObj.casingOffsetZ);
-      backPlate.position.set(-animObj.gearsOffset * 0.5, 0, -0.2 - animObj.casingOffsetZ * 0.4);
-      dialPlate.position.set(-animObj.gearsOffset * 0.35, -animObj.gearsOffset * 0.35, -animObj.dialOffsetZ * 0.3);
-      handsGroup.position.z = 0.22 + animObj.handsOffsetZ;
-
-      // Radially scatter gears aggressively across the visible screen
-      gear1.position.set(-0.6 - animObj.gearsOffset * 0.7, -0.6 - animObj.gearsOffset * 0.7, 0.1 - animObj.dialOffsetZ * 0.2);
-      gear2.position.set(0.8 + animObj.gearsOffset * 0.8, -0.4 - animObj.gearsOffset * 0.5, 0.1 - animObj.dialOffsetZ * 0.2);
-      gear3.position.set(0.5 + animObj.gearsOffset * 0.5, 0.6 + animObj.gearsOffset * 0.6, 0.1 - animObj.dialOffsetZ * 0.2);
-
-      // Explode numerals/markers radially outward in an expanding circle
-      markers.forEach((marker, i) => {
-        const angle = (i / 12) * Math.PI * 2;
-        const dist = 2.5 + animObj.gearsOffset * 1.5;
-        marker.position.set(Math.cos(angle) * dist, Math.sin(angle) * dist, animObj.handsOffsetZ * 0.3);
-      });
-
-      // Rotate/Scale watch
-      watchGroup.scale.setScalar(animObj.watchScale);
-      watchGroup.rotation.set(animObj.watchRotX, animObj.watchRotY + elapsed * 0.05, 0);
-
-      // Assemble QC (taller components)
-      qcGroup.scale.setScalar(animObj.qcScale);
-      qcGroup.rotation.y = elapsed * 0.08;
-      topPlate.position.y = animObj.qcTopY;
-      botPlate.position.y = animObj.qcBotY;
-      cryoCan.position.y = animObj.qcCanY;
-      coreMesh.position.y = animObj.qcBotY; // keep core aligned with bottom plate
-      coreMesh.scale.setScalar(animObj.qcCoreScale);
-      coreLight.position.y = animObj.qcBotY;
-      coreLight.intensity = animObj.qcCoreIntensity;
-
-      // Camera & Camera target positioning
-      camera.position.set(animObj.camX, animObj.camY, animObj.camZ);
-      camera.lookAt(animObj.lookAtX, animObj.lookAtY, 0);
-
-      renderer.render(scene, camera);
-      animationFrameId = requestAnimationFrame(render);
-    };
-
-    render();
-
-    // 12. Resize Handler
-    const handleResize = () => {
-      if (!canvasRef.current) return;
-      const w = canvasRef.current.clientWidth;
-      const h = canvasRef.current.clientHeight;
-
-      camera.aspect = w / h;
-      camera.updateProjectionMatrix();
-
-      renderer.setSize(w, h);
-    };
-    window.addEventListener("resize", handleResize);
+    // 3. Intro animation for Act I text when page first loads
+    const introTl = gsap.timeline();
+    introTl.to(".label-act-1", { opacity: 1, duration: 0.6, delay: 0.2 })
+           .to(".word-act-1", { y: 0, duration: 0.8, stagger: 0.05, ease: "power3.out" }, "-=0.4")
+           .to(".sub-act-1", { opacity: 1, duration: 0.6 }, "-=0.4");
 
     return () => {
-      cancelAnimationFrame(animationFrameId);
-      window.removeEventListener("resize", handleResize);
+      gsap.ticker.remove(updateLenis);
       lenis.destroy();
-      gsap.ticker.remove(lenis.raf);
       ScrollTrigger.getAll().forEach((trigger) => trigger.kill());
-      renderer.dispose();
     };
   }, [isLoading]);
 
-  // Jump scroll to Act trigger index
+  // Jump scroll to Act trigger index based on accurate container metrics
   const scrollToAct = (index: number) => {
-    if (!lenisRef.current) return;
-    const targetScrollY = index * window.innerHeight;
-    lenisRef.current.scrollTo(targetScrollY, { duration: 1.5 });
+    if (!lenisRef.current || !containerRef.current) return;
+
+    const containerTop = containerRef.current.getBoundingClientRect().top + window.scrollY;
+    let offset = 0;
+    if (index === 1) {
+      offset = 1.2 * window.innerHeight;
+    } else if (index === 2) {
+      offset = 2.3 * window.innerHeight;
+    } else if (index === 3) {
+      offset = 3.5 * window.innerHeight;
+    }
+
+    lenisRef.current.scrollTo(containerTop + offset, { 
+      duration: 1.2, 
+      ease: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)) 
+    });
   };
 
   const handleNextClick = () => {
@@ -607,10 +266,56 @@ export function WatchToComputer({ onApplyClick }: WatchToComputerProps) {
         </div>
       )}
 
-      {/* 3D WebGL Background Canvas */}
+      {/* Cinematic Background Images Container */}
       {!isLoading && (
-        <div className="fixed inset-0 w-full h-screen z-0 overflow-hidden pointer-events-none bg-black">
-          <canvas ref={canvasRef} className="w-full h-full" />
+        <div 
+          ref={bgContainerRef}
+          className="fixed inset-x-0 -top-[10vh] h-[120vh] z-0 overflow-hidden pointer-events-none bg-black"
+        >
+          {/* Act 1 Image */}
+          <div 
+            ref={img1Ref}
+            className="absolute inset-0 w-full h-full"
+            style={{ 
+              backgroundImage: "url('/Image/act1-watch.png.png')",
+              opacity: 1,
+              backgroundPositionY: "35%",
+              backgroundSize: "cover",
+              backgroundPositionX: "center",
+              backgroundRepeat: "no-repeat"
+            }}
+          />
+          
+          {/* Act 2 Image */}
+          <div 
+            ref={img2Ref}
+            className="absolute inset-0 w-full h-full"
+            style={{ 
+              backgroundImage: "url('/Image/act2-explode.jpg.jpg')",
+              opacity: 0,
+              backgroundPositionY: "35%",
+              backgroundSize: "cover",
+              backgroundPositionX: "center",
+              backgroundRepeat: "no-repeat"
+            }}
+          />
+          
+          {/* Act 3 Image */}
+          <div 
+            ref={img3Ref}
+            className="absolute inset-0 w-full h-full"
+            style={{ 
+              backgroundImage: "url('/Image/act3-quantum.png.png')",
+              opacity: 0,
+              backgroundPositionY: "35%",
+              backgroundSize: "cover",
+              backgroundPositionX: "center",
+              backgroundRepeat: "no-repeat"
+            }}
+          />
+
+          {/* Dark overlay so text remains readable */}
+          <div className="absolute inset-0 bg-black/40 z-10 pointer-events-none" />
         </div>
       )}
 
@@ -640,59 +345,54 @@ export function WatchToComputer({ onApplyClick }: WatchToComputerProps) {
               
               {/* Left Column: text details */}
               <div className="col-span-1 lg:col-span-6 flex flex-col justify-center text-left space-y-6 relative h-[400px]">
-                
-                {/* Act I Text Panel */}
+                                {/* Act I Text Panel */}
                 <div className="absolute text-act-1 opacity-100 max-w-md pointer-events-auto space-y-4">
-                  <span className="text-[10px] uppercase font-mono tracking-[0.25em] text-[#f3d46b] font-bold">
+                  <span className="label-act-1 opacity-0 text-[10px] uppercase font-mono tracking-[0.25em] text-[#f3d46b] font-bold block">
                     Act I — The Heritage
                   </span>
-                  <h1 className="text-4xl sm:text-5xl font-black text-white tracking-tight leading-none uppercase font-sans">
-                    Now is the time to <br />
-                    <span className="text-[#f3d46b]">harness AI</span> for your raise
+                  <h1 className="text-4xl sm:text-5xl font-black text-white tracking-tight leading-tight uppercase font-sans">
+                    {renderSplitHeadline(["NOW", "IS", "THE", "TIME", "TO", "HARNESS", "AI", "FOR", "YOUR", "RAISE"], [5, 6], 1)}
                   </h1>
-                  <p className="text-zinc-400 text-sm font-light leading-relaxed">
+                  <p className="sub-act-1 opacity-0 text-zinc-400 text-sm font-light leading-relaxed">
                     Old-world discipline meets next-generation execution. The gold antique watch movement represents the classic relational mechanics of capital raising, fully assembled and ticking.
                   </p>
                 </div>
 
                 {/* Act II Text Panel */}
-                <div className="absolute text-act-2 opacity-0 translate-y-10 max-w-md pointer-events-auto space-y-4">
-                  <span className="text-[10px] uppercase font-mono tracking-[0.25em] text-[#f3d46b] font-bold">
+                <div className="absolute text-act-2 opacity-100 max-w-md pointer-events-auto space-y-4">
+                  <span className="label-act-2 opacity-0 text-[10px] uppercase font-mono tracking-[0.25em] text-[#f3d46b] font-bold block">
                     Act II — The Disassembly
                   </span>
-                  <h2 className="text-4xl sm:text-5xl font-black text-white tracking-tight leading-none uppercase font-sans">
-                    Deconstruct the <br />
-                    <span className="text-[#f3d46b]">Capital Stack</span>
+                  <h2 className="text-4xl sm:text-5xl font-black text-white tracking-tight leading-tight uppercase font-sans">
+                    {renderSplitHeadline(["DECONSTRUCTING", "THE", "CAPITAL", "STACK"], [2, 3], 2)}
                   </h2>
-                  <p className="text-zinc-400 text-sm font-light leading-relaxed">
+                  <p className="sub-act-2 opacity-0 text-zinc-400 text-sm font-light leading-relaxed">
                     Timeless structures shatter into functional components. Manual workflows explode to isolate raw relationship signals, secure access nodes, and authority builders.
                   </p>
                 </div>
 
                 {/* Act III Text Panel */}
-                <div className="absolute text-act-3 opacity-0 translate-y-10 max-w-md pointer-events-auto space-y-4">
-                  <span className="text-[10px] uppercase font-mono tracking-[0.25em] text-[#f3d46b] font-bold">
+                <div className="absolute text-act-3 opacity-100 max-w-md pointer-events-auto space-y-4">
+                  <span className="label-act-3 opacity-0 text-[10px] uppercase font-mono tracking-[0.25em] text-[#f3d46b] font-bold block">
                     Act III — The Synthesis
                   </span>
-                  <h2 className="text-4xl sm:text-5xl font-black text-white tracking-tight leading-none uppercase font-sans">
-                    The Quantum <br />
-                    <span className="text-[#f3d46b]">Engine Assembles</span>
+                  <h2 className="text-4xl sm:text-5xl font-black text-white tracking-tight leading-tight uppercase font-sans">
+                    {renderSplitHeadline(["THE", "QUANTUM", "ENGINE", "ASSEMBLES"], [2, 3], 3)}
                   </h2>
-                  <p className="text-zinc-400 text-sm font-light leading-relaxed">
+                  <p className="sub-act-3 opacity-0 text-zinc-400 text-sm font-light leading-relaxed">
                     Those same components reassemble into a high-density, cryogenic quantum computer stack. Your raise is now powered by automated, interconnected momentum.
                   </p>
                 </div>
 
                 {/* Act IV / CTA Text Panel (Centered layout override when active) */}
-                <div className="absolute text-act-4 opacity-0 translate-y-10 w-full max-w-xl left-1/2 -translate-x-1/2 text-center pointer-events-auto space-y-6">
-                  <span className="text-[10px] uppercase font-mono tracking-[0.25em] text-[#f3d46b] font-bold block">
+                <div className="absolute text-act-4 opacity-100 w-full max-w-xl left-1/2 -translate-x-1/2 text-center pointer-events-auto space-y-6">
+                  <span className="label-act-4 opacity-0 text-[10px] uppercase font-mono tracking-[0.25em] text-[#f3d46b] font-bold block">
                     Act IV — Infinite Scaling
                   </span>
-                  <h2 className="text-4xl sm:text-6xl font-black text-white tracking-tight leading-none uppercase font-sans">
-                    CALIBRATE YOUR <br />
-                    <span className="text-[#f3d46b]">CAPITAL PIPELINE</span>
+                  <h2 className="text-4xl sm:text-6xl font-black text-white tracking-tight leading-tight uppercase font-sans">
+                    {renderSplitHeadline(["CALIBRATE", "YOUR", "CAPITAL", "PIPELINE"], [2, 3], 4)}
                   </h2>
-                  <p className="text-zinc-400 text-sm font-light leading-relaxed max-w-md mx-auto">
+                  <p className="sub-act-4 opacity-0 text-zinc-400 text-sm font-light leading-relaxed max-w-md mx-auto">
                     Generate an interactive, high-density 12-month Investor Relations and narrative campaign strategy calibrated for your traction, stage, and goals.
                   </p>
                   <div className="pt-4">
@@ -704,7 +404,6 @@ export function WatchToComputer({ onApplyClick }: WatchToComputerProps) {
                     </button>
                   </div>
                 </div>
-
               </div>
             </div>
           </div>
