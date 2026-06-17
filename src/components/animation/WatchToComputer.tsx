@@ -5,7 +5,6 @@ import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import Lenis from "lenis";
 
-
 if (typeof window !== "undefined") {
   gsap.registerPlugin(ScrollTrigger);
 }
@@ -14,18 +13,35 @@ interface WatchToComputerProps {
   onApplyClick?: () => void;
 }
 
+// 6 Animation frames to simulate the watch exploding and reassembling
+const imageUrls = [
+  "/Image/act1-watch.png",
+  "/Image/explode-1.webp",
+  "/Image/explode-2.webp",
+  "/Image/explode-3.webp",
+  "/Image/explode-4.webp",
+  "/Image/act1-watch.png"
+];
+
 export function WatchToComputer({ onApplyClick }: WatchToComputerProps) {
   const containerRef = useRef<HTMLDivElement>(null);
+  const contentWrapperRef = useRef<HTMLDivElement>(null);
   const lenisRef = useRef<Lenis | null>(null);
 
   const bgContainerRef = useRef<HTMLDivElement>(null);
-  const img1Ref = useRef<HTMLDivElement>(null);
-  const img2Ref = useRef<HTMLDivElement>(null);
-  const img3Ref = useRef<HTMLDivElement>(null);
+  const imgRefs = useRef<(HTMLDivElement | null)[]>([]);
 
   const [loadingProgress, setLoadingProgress] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [currentActIndex, setCurrentActIndex] = useState(0);
+
+  // Preload all animation frames to prevent scroll lag/blinks
+  useEffect(() => {
+    imageUrls.forEach((url) => {
+      const img = new Image();
+      img.src = url;
+    });
+  }, []);
 
   // Loading Screen simulation
   useEffect(() => {
@@ -48,7 +64,7 @@ export function WatchToComputer({ onApplyClick }: WatchToComputerProps) {
   // GSAP Scroll Trigger & Parallax integration
   useEffect(() => {
     if (isLoading) return;
-    if (!containerRef.current) return;
+    if (!containerRef.current || !contentWrapperRef.current) return;
 
     // 1. Lenis Smooth Scroll Initialization synchronized via GSAP Ticker
     const lenis = new Lenis({
@@ -70,21 +86,23 @@ export function WatchToComputer({ onApplyClick }: WatchToComputerProps) {
       ScrollTrigger.update();
     });
 
-    // 2. Master GSAP ScrollTrigger Timeline
+    // 2. Master GSAP ScrollTrigger Timeline with Pinned Viewport Container (600vh)
     const tl = gsap.timeline({
       scrollTrigger: {
         trigger: containerRef.current,
         start: "top top",
-        end: "bottom bottom",
-        scrub: 1.2,
+        end: () => `+=${window.innerHeight * 6}`,
+        pin: contentWrapperRef.current,
+        pinSpacing: true,
+        scrub: 1,
         onUpdate: (self) => {
           const progress = self.progress;
           let activeIndex = 0;
-          if (progress < 0.28) {
+          if (progress < 0.20) {
             activeIndex = 0;
-          } else if (progress < 0.58) {
+          } else if (progress < 0.80) {
             activeIndex = 1;
-          } else if (progress < 0.82) {
+          } else if (progress < 0.95) {
             activeIndex = 2;
           } else {
             activeIndex = 3;
@@ -94,62 +112,64 @@ export function WatchToComputer({ onApplyClick }: WatchToComputerProps) {
       },
     });
 
-    // --- Background Image Controls (Parallax translateY + Ken Burns scale) ---
-    // Act I: yPercent -10 to 10 (0.5x scroll movement) & scale 1.0 to 1.08
-    tl.fromTo(img1Ref.current, 
-      { scale: 1.0, yPercent: -10 }, 
-      { scale: 1.08, yPercent: 10, ease: "none", duration: 1.5 }, 
-      0
-    );
-    
-    // Act II: yPercent -10 to 10 & scale 1.0 to 1.08
-    tl.fromTo(img2Ref.current, 
-      { scale: 1.0, yPercent: -10 }, 
-      { scale: 1.08, yPercent: 10, ease: "none", duration: 1.5 }, 
-      1.5
-    );
-    
-    // Act III: yPercent -10 to 10 & scale 1.0 to 1.08
-    tl.fromTo(img3Ref.current, 
-      { scale: 1.0, yPercent: -10 }, 
-      { scale: 1.08, yPercent: 10, ease: "none", duration: 1.5 }, 
-      3.0
-    );
+    // --- Background Image Controls (Parallax drift on parent) ---
+    tl.to(bgContainerRef.current, {
+      yPercent: -10,
+      ease: "none",
+      duration: 5.0,
+    }, 0);
 
-    // --- Background Crossfades ---
-    // Act I to Act II crossfade
-    tl.to(img1Ref.current, { opacity: 0, duration: 0.8, ease: "power1.inOut" }, 0.4)
-      .to(img2Ref.current, { opacity: 1, duration: 0.8, ease: "power1.inOut" }, 0.4);
+    // --- Frame-by-frame Ken Burns Zoom Scales ---
+    tl.fromTo(imgRefs.current[0], { scale: 1.0 }, { scale: 1.08, ease: "none", duration: 1.0 }, 0);
+    tl.fromTo(imgRefs.current[1], { scale: 1.0 }, { scale: 1.08, ease: "none", duration: 1.0 }, 1.0);
+    tl.fromTo(imgRefs.current[2], { scale: 1.0 }, { scale: 1.08, ease: "none", duration: 1.0 }, 2.0);
+    tl.fromTo(imgRefs.current[3], { scale: 1.0 }, { scale: 1.08, ease: "none", duration: 1.0 }, 3.0);
+    tl.fromTo(imgRefs.current[4], { scale: 1.0 }, { scale: 1.08, ease: "none", duration: 1.0 }, 4.0);
+    tl.fromTo(imgRefs.current[5], { scale: 1.0 }, { scale: 1.08, ease: "none", duration: 1.0 }, 5.0);
 
-    // Act II to Act III crossfade
-    tl.to(img2Ref.current, { opacity: 0, duration: 0.8, ease: "power1.inOut" }, 1.9)
-      .to(img3Ref.current, { opacity: 1, duration: 0.8, ease: "power1.inOut" }, 1.9);
+    // --- Background Image Opacity Crossfades ---
+    // Frame 0 to 1 Crossfade (occurs around scroll 20%)
+    tl.to(imgRefs.current[0], { opacity: 0, duration: 0.4, ease: "power1.inOut" }, 0.8)
+      .to(imgRefs.current[1], { opacity: 1, duration: 0.4, ease: "power1.inOut" }, 0.8);
 
-    // Act III to CTA background fade out
-    tl.to(img3Ref.current, { opacity: 0, duration: 0.8, ease: "power1.inOut" }, 3.4);
+    // Frame 1 to 2 Crossfade (occurs around scroll 40%)
+    tl.to(imgRefs.current[1], { opacity: 0, duration: 0.4, ease: "power1.inOut" }, 1.8)
+      .to(imgRefs.current[2], { opacity: 1, duration: 0.4, ease: "power1.inOut" }, 1.8);
 
-    // --- Text Reveals & Fades ---
-    // Act I Text Out
-    tl.to(".text-act-1", { opacity: 0, y: -40, duration: 0.6, ease: "power1.inOut" }, 0.4);
+    // Frame 2 to 3 Crossfade (occurs around scroll 60%)
+    tl.to(imgRefs.current[2], { opacity: 0, duration: 0.4, ease: "power1.inOut" }, 2.8)
+      .to(imgRefs.current[3], { opacity: 1, duration: 0.4, ease: "power1.inOut" }, 2.8);
 
-    // Act II Text In
-    tl.fromTo(".label-act-2", { opacity: 0 }, { opacity: 1, duration: 0.4 }, 0.9)
-      .fromTo(".headline-act-2", { opacity: 0, y: 40 }, { opacity: 1, y: 0, duration: 0.6, ease: "power2.out" }, 0.9)
-      .fromTo(".sub-act-2", { opacity: 0 }, { opacity: 1, duration: 0.4 }, 1.2)
+    // Frame 3 to 4 Crossfade (occurs around scroll 80%)
+    tl.to(imgRefs.current[3], { opacity: 0, duration: 0.4, ease: "power1.inOut" }, 3.8)
+      .to(imgRefs.current[4], { opacity: 1, duration: 0.4, ease: "power1.inOut" }, 3.8);
+
+    // Frame 4 to 5 Crossfade (occurs around scroll 100%)
+    tl.to(imgRefs.current[4], { opacity: 0, duration: 0.2, ease: "power1.inOut" }, 4.8)
+      .to(imgRefs.current[5], { opacity: 1, duration: 0.2, ease: "power1.inOut" }, 4.8);
+
+    // --- Staggered Text Panel Reveals ---
+    // Act I Text Out (around scroll 20%)
+    tl.to(".text-act-1", { opacity: 0, y: -40, duration: 0.3, ease: "power1.inOut" }, 0.8);
+
+    // Act II Text In (around scroll 20% to 80%)
+    tl.fromTo(".label-act-2", { opacity: 0 }, { opacity: 1, duration: 0.2 }, 1.0)
+      .fromTo(".headline-act-2", { opacity: 0, y: 40 }, { opacity: 1, y: 0, duration: 0.3, ease: "power2.out" }, 1.0)
+      .fromTo(".sub-act-2", { opacity: 0 }, { opacity: 1, duration: 0.2 }, 1.3)
       // Act II Text Out
-      .to(".text-act-2", { opacity: 0, y: -40, duration: 0.6, ease: "power1.inOut" }, 1.9);
+      .to(".text-act-2", { opacity: 0, y: -40, duration: 0.3, ease: "power1.inOut" }, 3.8);
 
-    // Act III Text In
-    tl.fromTo(".label-act-3", { opacity: 0 }, { opacity: 1, duration: 0.4 }, 2.4)
-      .fromTo(".headline-act-3", { opacity: 0, y: 40 }, { opacity: 1, y: 0, duration: 0.6, ease: "power2.out" }, 2.4)
-      .fromTo(".sub-act-3", { opacity: 0 }, { opacity: 1, duration: 0.4 }, 2.7)
+    // Act III Text In (around scroll 80% to 95%)
+    tl.fromTo(".label-act-3", { opacity: 0 }, { opacity: 1, duration: 0.2 }, 4.0)
+      .fromTo(".headline-act-3", { opacity: 0, y: 40 }, { opacity: 1, y: 0, duration: 0.3, ease: "power2.out" }, 4.0)
+      .fromTo(".sub-act-3", { opacity: 0 }, { opacity: 1, duration: 0.2 }, 4.3)
       // Act III Text Out
-      .to(".text-act-3", { opacity: 0, y: -40, duration: 0.6, ease: "power1.inOut" }, 3.4);
+      .to(".text-act-3", { opacity: 0, y: -40, duration: 0.2, ease: "power1.inOut" }, 4.7);
 
-    // Act IV Text In
-    tl.fromTo(".label-act-4", { opacity: 0 }, { opacity: 1, duration: 0.4 }, 3.9)
-      .fromTo(".headline-act-4", { opacity: 0, y: 40 }, { opacity: 1, y: 0, duration: 0.6, ease: "power2.out" }, 3.9)
-      .fromTo(".sub-act-4", { opacity: 0 }, { opacity: 1, duration: 0.4 }, 4.2);
+    // Act IV Text In (around scroll 95% to 100%)
+    tl.fromTo(".label-act-4", { opacity: 0 }, { opacity: 1, duration: 0.2 }, 4.9)
+      .fromTo(".headline-act-4", { opacity: 0, y: 40 }, { opacity: 1, y: 0, duration: 0.3, ease: "power2.out" }, 4.9)
+      .fromTo(".sub-act-4", { opacity: 0 }, { opacity: 1, duration: 0.2 }, 5.2);
 
     // 3. Intro animation for Act I text when page first loads
     const introTl = gsap.timeline();
@@ -177,11 +197,11 @@ export function WatchToComputer({ onApplyClick }: WatchToComputerProps) {
     const containerTop = containerRef.current.getBoundingClientRect().top + window.scrollY;
     let offset = 0;
     if (index === 1) {
-      offset = 1.2 * window.innerHeight;
+      offset = 2.4 * window.innerHeight;
     } else if (index === 2) {
-      offset = 2.3 * window.innerHeight;
+      offset = 5.1 * window.innerHeight;
     } else if (index === 3) {
-      offset = 3.5 * window.innerHeight;
+      offset = 6.0 * window.innerHeight;
     }
 
     lenisRef.current.scrollTo(containerTop + offset, { 
@@ -199,7 +219,7 @@ export function WatchToComputer({ onApplyClick }: WatchToComputerProps) {
   };
 
   return (
-    <div className="relative bg-black text-white overflow-hidden min-h-screen">
+    <div ref={containerRef} className="relative bg-[#050A14] text-white overflow-hidden min-h-screen">
       {/* Loading Calibrator Screen */}
       {isLoading && (
         <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-black transition-opacity duration-700 pointer-events-auto select-none">
@@ -250,72 +270,34 @@ export function WatchToComputer({ onApplyClick }: WatchToComputerProps) {
         </div>
       )}
 
-      {/* Cinematic Background Images Container */}
+      {/* Pinned Content Wrapper */}
       {!isLoading && (
         <div 
-          ref={bgContainerRef}
-          className="fixed inset-0 w-full h-screen z-0 overflow-hidden pointer-events-none bg-black"
+          ref={contentWrapperRef}
+          className="w-full h-screen relative flex items-center justify-start overflow-hidden bg-[#050A14] z-10"
         >
-          {/* Act 1 Image */}
+          {/* Stack of absolute images */}
           <div 
-            ref={img1Ref}
-            className="absolute w-full h-[130%] -top-[15%] bg-cover bg-center"
-            style={{ 
-              backgroundImage: "url('/Image/act1-watch.png')",
-              opacity: 1,
-              backgroundRepeat: "no-repeat"
-            }}
-          />
-          
-          {/* Act 2 Image */}
-          <div 
-            ref={img2Ref}
-            className="absolute w-full h-[130%] -top-[15%] bg-cover bg-center"
-            style={{ 
-              backgroundImage: "url('/Image/act3-goldwatch.jpg')",
-              opacity: 0,
-              backgroundRepeat: "no-repeat"
-            }}
-          />
-          
-          {/* Act 3 Image */}
-          <div 
-            ref={img3Ref}
-            className="absolute w-full h-[130%] -top-[15%] bg-cover bg-center"
-            style={{ 
-              backgroundImage: "url('/Image/act2-chip3d.jpg')",
-              opacity: 0,
-              backgroundRepeat: "no-repeat"
-            }}
-          />
+            ref={bgContainerRef}
+            className="absolute right-0 top-1/2 -translate-y-1/2 w-1/2 h-[75vh] flex items-center justify-center pointer-events-none z-0"
+          >
+            {imageUrls.map((url, index) => (
+              <div
+                key={index}
+                ref={(el) => { imgRefs.current[index] = el; }}
+                className="absolute inset-0 bg-contain bg-center bg-no-repeat"
+                style={{
+                  backgroundImage: `url('${url}')`,
+                  opacity: index === 0 ? 1 : 0
+                }}
+              />
+            ))}
+            {/* Dark overlay so text remains readable */}
+            <div className="absolute inset-0 bg-[#050A14]/30 z-10 pointer-events-none" />
+          </div>
 
-          {/* Dark overlay so text remains readable */}
-          <div className="absolute inset-0 bg-black/40 z-10 pointer-events-none" />
-        </div>
-      )}
-
-      {/* 5 Scroll Height Sections to drive timeline trigger points */}
-      {!isLoading && (
-        <div ref={containerRef} className="relative z-10 w-full h-[450vh] pointer-events-none">
-          
-          {/* Act I Section trigger */}
-          <div className="w-full h-screen flex items-center justify-start max-w-7xl mx-auto px-6" />
-          
-          {/* Act II Section trigger */}
-          <div className="w-full h-screen flex items-center justify-start max-w-7xl mx-auto px-6" />
-
-          {/* Act III Section trigger */}
-          <div className="w-full h-screen flex items-center justify-start max-w-7xl mx-auto px-6" />
-
-          {/* CTA Section trigger */}
-          <div className="w-full h-screen flex items-center justify-center max-w-7xl mx-auto px-6" />
-        </div>
-      )}
-
-      {/* Fixed Layout Cinematic Text Reveals */}
-      {!isLoading && (
-        <div className="fixed inset-0 w-full h-screen z-10 pointer-events-none flex items-center justify-start">
-          <div className="container mx-auto px-6 max-w-7xl w-full">
+          {/* Text Overlays on the Left side */}
+          <div className="container mx-auto px-6 max-w-7xl relative z-10 w-full">
             <div className="grid grid-cols-1 lg:grid-cols-12 items-center w-full">
               
               {/* Left Column: text details */}
@@ -363,7 +345,7 @@ export function WatchToComputer({ onApplyClick }: WatchToComputerProps) {
                   </p>
                 </div>
 
-                {/* Act IV / CTA Text Panel (Centered layout override when active) */}
+                {/* Act IV / CTA Text Panel */}
                 <div className="absolute text-act-4 opacity-100 w-full max-w-xl left-1/2 -translate-x-1/2 text-center pointer-events-auto space-y-6">
                   <span className="label-act-4 opacity-0 text-[10px] uppercase font-mono tracking-[0.25em] text-[#f3d46b] font-bold block">
                     Act IV — Infinite Scaling
@@ -384,6 +366,7 @@ export function WatchToComputer({ onApplyClick }: WatchToComputerProps) {
                     </button>
                   </div>
                 </div>
+
               </div>
             </div>
           </div>
